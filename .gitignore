@@ -33,4 +33,6 @@ out/
 /nbdist/
 /.nb-gradle/
 
+src/main/resources/firebase_adminsdk.json
+src/main/resources/application.properties
 
