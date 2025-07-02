@@ -1,29 +1,29 @@
 package projcet.neverland.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import projcet.neverland.dto.MemoryDeleteRequestDto;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class VectorSyncService {
+public class KeepsakeMemorySyncService {
 
     private final WebClient fastapiWebClient;
 
-    public Mono<Void> deleteMemory(String itemId, String itemType, String userId) {
-        MemoryDeleteRequestDto dto = new MemoryDeleteRequestDto(itemId, itemType, userId);
+    public Mono<Void> registerKeepsake(String keepsakeId, String authKeyId) {
+        Map<String, String> request = Map.of(
+                "keepsake_id", keepsakeId,
+                "auth_key_id", authKeyId
+        );
 
-        return fastapiWebClient
-                .method(HttpMethod.DELETE)
-                .uri("/api/admin/memory/delete")
+        return fastapiWebClient.post()
+                .uri("/api/keepsake/process")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(dto) // ✅ 이제 DTO 사용
+                .bodyValue(request)
                 .retrieve()
                 .bodyToMono(Void.class);
     }

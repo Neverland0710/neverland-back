@@ -13,4 +13,7 @@ public interface AuthKeyRepository extends JpaRepository<AuthKey, String> {
 
     // ✅ user_id 기준 인증키 전체 조회 (통계 갱신용)
     List<AuthKey> findByUserId(String userId);
+
+    // ✅ auth_code 기준 조회 (신규 추가)
+    Optional<AuthKey> findByAuthCode(String authCode);
 }

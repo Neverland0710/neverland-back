@@ -11,6 +11,7 @@ import projcet.neverland.dto.KeepsakeDto;
 import projcet.neverland.entity.Keepsake;
 import projcet.neverland.repository.AuthKeyRepository;
 import projcet.neverland.repository.KeepsakeRepository;
+import projcet.neverland.service.KeepsakeMemorySyncService;
 import projcet.neverland.service.StatisticsService;
 import projcet.neverland.service.VectorSyncService;
 
@@ -29,6 +30,7 @@ public class KeepsakeController {
     private final AuthKeyRepository authKeyRepository;
     private final StatisticsService statisticsService;
     private final VectorSyncService vectorSyncService;
+    private final KeepsakeMemorySyncService keepsakeMemorySyncService;
 
     private final String uploadDir = "C:/neverland-uploads/keeps";
     private final String urlPrefix = "/keeps/";
@@ -72,6 +74,9 @@ public class KeepsakeController {
             authKeyRepository.findByAuthKeyId(authKeyId).ifPresent(authKey -> {
                 statisticsService.recalculateKeepsakeCount(authKey.getUserId());
             });
+
+            // ✅ FastAPI 연동 - 벡터 등록
+            keepsakeMemorySyncService.registerKeepsake(keepsake.getKeepsakeId(), authKeyId).subscribe();
 
             return ResponseEntity.ok("✅ 유품 등록 성공");
 
@@ -125,13 +130,18 @@ public class KeepsakeController {
             Optional<Keepsake> keepsakeOpt = keepsakeRepository.findByImagePathContaining(filename);
             if (keepsakeOpt.isPresent()) {
                 Keepsake keepsake = keepsakeOpt.get();
-                keepsakeRepository.delete(keepsakeOpt.get());
+                keepsakeRepository.delete(keepsake);
 
-                vectorSyncService.deleteVector("keepsake", keepsake.getKeepsakeId()).subscribe();
-
-                // ✅ 통계 감소
+                // ✅ 사용자 ID 조회 후 FastAPI 벡터 삭제 및 통계 감소
                 authKeyRepository.findByAuthKeyId(keepsake.getAuthKeyId()).ifPresent(authKey -> {
-                    statisticsService.recalculateKeepsakeCount(authKey.getUserId());
+                    String userId = authKey.getUserId();
+                    vectorSyncService.deleteMemory(
+                            keepsake.getKeepsakeId(),
+                            "keepsake",
+                            userId
+                    ).subscribe();
+
+                    statisticsService.recalculateKeepsakeCount(userId);
                 });
 
                 return ResponseEntity.ok("✅ 유품 삭제 완료");
@@ -143,4 +153,5 @@ public class KeepsakeController {
             return ResponseEntity.status(500).body("❌ 삭제 중 예외 발생: " + e.getMessage());
         }
     }
+
 }
