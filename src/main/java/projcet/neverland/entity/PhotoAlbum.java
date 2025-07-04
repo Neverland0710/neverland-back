@@ -19,7 +19,7 @@ public class PhotoAlbum {
     @Column(name = "photo_id")
     private String photoId;
 
-    @Column(name = "auth_key_id", nullable = false)
+    @Column(name = "AUTH_KEY_ID", nullable = false)
     private String authKeyId;
 
     @Column(name = "title", nullable = false)

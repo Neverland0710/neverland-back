@@ -39,7 +39,7 @@ public class PhotoController {
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "📤 사진 업로드", description = "사진 파일과 정보를 업로드하고 벡터DB에 등록합니다.")
     public ResponseEntity<?> uploadPhoto(
-            @RequestParam("auth_key_id") String authKeyId,
+            @RequestParam("authKeyId") String authKeyId,
             @RequestParam("title") String title,
             @RequestParam("description") String description,
             @RequestParam("photo_date") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate photoDate,
@@ -114,8 +114,8 @@ public class PhotoController {
     }
 
     @GetMapping("/list")
-    @Operation(summary = "📄 사진 목록 조회", description = "auth_key_id 기준으로 업로드된 사진 목록을 반환합니다.")
-    public ResponseEntity<List<PhotoAlbum>> getPhotoList(@RequestParam("auth_key_id") String authKeyId) {
+    @Operation(summary = "📄 사진 목록 조회", description = "authKeyId 기준으로 업로드된 사진 목록을 반환합니다.")
+    public ResponseEntity<List<PhotoAlbum>> getPhotoList(@RequestParam("authKeyId") String authKeyId) {
         return ResponseEntity.ok(photoAlbumRepository.findByAuthKeyId(authKeyId));
     }
 }

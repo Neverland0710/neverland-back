@@ -10,6 +10,7 @@ import projcet.neverland.service.VectorSyncService;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,8 +33,17 @@ public class LetterController {
 
     @DeleteMapping("/delete/{letterId}")
     public ResponseEntity<?> deleteLetter(@PathVariable String letterId, @RequestParam String userId) {
-        letterService.deleteLetter(letterId);
-        vectorSyncService.deleteMemory(letterId, "letter", userId).subscribe();
-        return ResponseEntity.ok("✅ 편지 삭제 완료");
+        try {
+            letterService.deleteLetter(letterId); // 편지 삭제 서비스 호출
+            vectorSyncService.deleteMemory(letterId, "letter", userId).subscribe(); // 메모리 삭제
+            return ResponseEntity.ok("✅ 편지 삭제 완료");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("❌ 삭제 실패: " + e.getMessage()); // 예외 처리
+        }
+    }
+    @GetMapping("/relation")
+    public ResponseEntity<Map<String, String>> getRelationByUserId(@RequestParam String userId) {
+        String relation = letterService.getRelationByUserId(userId);
+        return ResponseEntity.ok(Map.of("relation", relation));
     }
 }

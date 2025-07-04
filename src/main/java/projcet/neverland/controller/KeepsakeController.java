@@ -38,7 +38,7 @@ public class KeepsakeController {
     @PostMapping("/upload")
     @Operation(summary = "유품 등록", description = "유품 정보 및 이미지를 등록합니다.")
     public ResponseEntity<?> uploadKeepsake(
-            @RequestParam("auth_key_id") String authKeyId,
+            @RequestParam("authKeyId") String authKeyId,
             @RequestParam("item_name") String itemName,
             @RequestParam(value = "acquisition_period", required = false) String acquisitionPeriod,
             @RequestParam("description") String description,
@@ -86,9 +86,9 @@ public class KeepsakeController {
     }
 
     @GetMapping("/list")
-    @Operation(summary = "유품 목록 조회", description = "auth_key_id 기준 유품 리스트를 정렬 기준과 함께 반환합니다.")
+    @Operation(summary = "유품 목록 조회", description = "authKeyId 기준 유품 리스트를 정렬 기준과 함께 반환합니다.")
     public ResponseEntity<List<KeepsakeDto>> getKeepsakeList(
-            @RequestParam("auth_key_id") String authKeyId,
+            @RequestParam("authKeyId") String authKeyId,
             @RequestParam(value = "sort", defaultValue = "latest") String sort
     ) {
         List<Keepsake> keepsakes;

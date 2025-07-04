@@ -17,7 +17,7 @@ public class PhotoMemorySyncService {
     public Mono<Void> registerPhoto(String photoId, String authKeyId) {
         Map<String, String> request = Map.of(
                 "photo_id", photoId,
-                "auth_key_id", authKeyId
+                "authKeyId", authKeyId
         );
 
         return fastapiWebClient.post()

@@ -13,6 +13,7 @@ import projcet.neverland.entity.Statistics;
 import projcet.neverland.repository.AuthKeyRepository;
 import projcet.neverland.repository.LetterRepository;
 import projcet.neverland.repository.StatisticsRepository;
+import projcet.neverland.repository.UserRepository;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
@@ -26,6 +27,8 @@ public class LetterService {
     private final StatisticsRepository statisticsRepository;
     private final AuthKeyRepository authKeyRepository;
     private final WebClient fastapiWebClient;
+    private final UserRepository userRepository;
+
 
     public Mono<Void> sendLetterAndReply(LetterDto dto) {
         String letterId = UUID.randomUUID().toString();
@@ -54,7 +57,7 @@ public class LetterService {
         Map<String, Object> request = new HashMap<>();
         request.put("letter_id", letterId);
         request.put("user_id", dto.getUserId());
-        request.put("auth_key_id", dto.getAuthKeyId());
+        request.put("authKeyId", dto.getAuthKeyId());
         request.put("letter_text", Optional.ofNullable(dto.getContent()).orElse(""));
 
         // ✅ 디버깅용 로그 출력
@@ -101,6 +104,9 @@ public class LetterService {
         AuthKey authKey = authKeyRepository.findById(authKeyId)
                 .orElseThrow(() -> new IllegalArgumentException("❌ 유효하지 않은 인증키 ID입니다."));
         return letterRepository.findByAuthKeyOrderByCreatedAtDesc(authKey);
+    }
+    public String getRelationByUserId(String userId) {
+        return userRepository.findRelationToDeceased(userId);
     }
 
     public void deleteLetter(String letterId) {

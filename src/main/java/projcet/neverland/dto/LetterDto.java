@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Setter
 public class LetterDto {
 
-    @JsonProperty("auth_key_id")       // ✅ JSON의 snake_case → Java camelCase 매핑
+    @JsonProperty("authKeyId")       // ✅ JSON의 snake_case → Java camelCase 매핑
     private String authKeyId;
 
     @JsonProperty("user_id")

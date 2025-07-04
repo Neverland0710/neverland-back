@@ -16,4 +16,6 @@ public interface AuthKeyRepository extends JpaRepository<AuthKey, String> {
 
     // ✅ auth_code 기준 조회 (신규 추가)
     Optional<AuthKey> findByAuthCode(String authCode);
+
+
 }

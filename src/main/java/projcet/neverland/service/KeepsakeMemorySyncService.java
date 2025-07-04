@@ -17,7 +17,7 @@ public class KeepsakeMemorySyncService {
     public Mono<Void> registerKeepsake(String keepsakeId, String authKeyId) {
         Map<String, String> request = Map.of(
                 "keepsake_id", keepsakeId,
-                "auth_key_id", authKeyId
+                "authKeyId", authKeyId
         );
 
         return fastapiWebClient.post()
