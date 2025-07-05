@@ -23,7 +23,7 @@ public class VectorSyncService {
                 .method(HttpMethod.DELETE)
                 .uri("/api/admin/memory/delete")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(dto) // ✅ 이제 DTO 사용
+                .bodyValue(dto) // 이제 DTO 사용
                 .retrieve()
                 .bodyToMono(Void.class);
     }

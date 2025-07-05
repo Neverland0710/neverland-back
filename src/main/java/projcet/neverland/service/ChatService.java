@@ -21,7 +21,7 @@ public class ChatService {
     private final UserRepository userRepository;
     private final TextConversationRepository textConversationRepository;
 
-    // 🔸 FastAPI 챗 요청
+    // FastAPI 챗 요청
     public Mono<Map> sendChatRequest(String authKeyId, String userId, String userInput) {
         Map<String, Object> requestBody = Map.of(
                 "authKeyId", authKeyId,
@@ -37,17 +37,17 @@ public class ChatService {
                 .bodyToMono(Map.class);
     }
 
-    // 🔸 유저 ID로 고인과의 관계 조회
+    // 유저 ID로 고인과의 관계 조회
     public String getRelationByUserId(String userId) {
         return userRepository.findRelationToDeceased(userId);
     }
 
-    // 🔸 대화 기록 조회 (Entity 버전 - 내부용)
+    // 대화 기록 조회 (Entity 버전 - 내부용)
     public List<TextConversation> getChatHistory(String authKeyId) {
         return textConversationRepository.findByAuthKeyIdOrderBySentAtAsc(authKeyId);
     }
 
-    // 🔸 대화 기록 DTO 버전 (Flutter 응답용)
+    // 대화 기록 DTO 버전 (Flutter 응답용)
     public List<ChatMessageDto> getChatHistoryAsDto(String authKeyId) {
         return textConversationRepository.findByAuthKeyIdOrderBySentAtAsc(authKeyId)
                 .stream()

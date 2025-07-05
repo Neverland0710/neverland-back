@@ -70,18 +70,18 @@ public class KeepsakeController {
             );
             keepsakeRepository.save(keepsake);
 
-            // ✅ 통계 연동
+            // 통계 연동
             authKeyRepository.findByAuthKeyId(authKeyId).ifPresent(authKey -> {
                 statisticsService.recalculateKeepsakeCount(authKey.getUserId());
             });
 
-            // ✅ FastAPI 연동 - 벡터 등록
+            // FastAPI 연동 - 벡터 등록
             keepsakeMemorySyncService.registerKeepsake(keepsake.getKeepsakeId(), authKeyId).subscribe();
 
-            return ResponseEntity.ok("✅ 유품 등록 성공");
+            return ResponseEntity.ok("유품 등록 성공");
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("❌ 업로드 실패: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("업로드 실패: " + e.getMessage());
         }
     }
 
@@ -132,7 +132,7 @@ public class KeepsakeController {
                 Keepsake keepsake = keepsakeOpt.get();
                 keepsakeRepository.delete(keepsake);
 
-                // ✅ 사용자 ID 조회 후 FastAPI 벡터 삭제 및 통계 감소
+                // 사용자 ID 조회 후 FastAPI 벡터 삭제 및 통계 감소
                 authKeyRepository.findByAuthKeyId(keepsake.getAuthKeyId()).ifPresent(authKey -> {
                     String userId = authKey.getUserId();
                     vectorSyncService.deleteMemory(
@@ -144,13 +144,13 @@ public class KeepsakeController {
                     statisticsService.recalculateKeepsakeCount(userId);
                 });
 
-                return ResponseEntity.ok("✅ 유품 삭제 완료");
+                return ResponseEntity.ok("유품 삭제 완료");
             } else {
-                return ResponseEntity.status(404).body("❌ 해당 유품 DB 레코드 없음");
+                return ResponseEntity.status(404).body("해당 유품 DB 레코드 없음");
             }
 
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("❌ 삭제 중 예외 발생: " + e.getMessage());
+            return ResponseEntity.status(500).body("삭제 중 예외 발생: " + e.getMessage());
         }
     }
 

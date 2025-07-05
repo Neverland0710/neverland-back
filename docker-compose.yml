@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  spring-server:
+    build: .
+    container_name: spring-server
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+    restart: always

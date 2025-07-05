@@ -1,0 +1,30 @@
+name: 🚀 Deploy Spring Boot to EC2
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout source
+        uses: actions/checkout@v3
+
+      - name: 🔐 Decode PEM key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d > key.pem
+          chmod 400 key.pem
+
+      - name: 🚀 Deploy to EC2 and run
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e
+            echo "🔄 Pulling latest code..."
+            cd ~/neverland-back || git clone https://github.com/Neverland0710/neverland-back.git && cd neverland-back
+            git pull origin main
+            ./gradlew build -x test
+            pkill -f 'java -jar' || true
+            nohup java -jar build/libs/*.jar > app.log 2>&1 &
+          EOF

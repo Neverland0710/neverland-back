@@ -23,7 +23,7 @@ public class LetterController {
     @PostMapping("/send")
     public Mono<ResponseEntity<String>> sendLetter(@RequestBody LetterDto dto) {
         return letterService.sendLetterAndReply(dto)
-                .thenReturn(ResponseEntity.ok("✅ 편지와 답장이 저장되었습니다"));
+                .thenReturn(ResponseEntity.ok("편지와 답장이 저장되었습니다"));
     }
 
     @GetMapping("/list")
@@ -36,9 +36,9 @@ public class LetterController {
         try {
             letterService.deleteLetter(letterId); // 편지 삭제 서비스 호출
             vectorSyncService.deleteMemory(letterId, "letter", userId).subscribe(); // 메모리 삭제
-            return ResponseEntity.ok("✅ 편지 삭제 완료");
+            return ResponseEntity.ok("편지 삭제 완료");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("❌ 삭제 실패: " + e.getMessage()); // 예외 처리
+            return ResponseEntity.status(500).body("삭제 실패: " + e.getMessage()); // 예외 처리
         }
     }
     @GetMapping("/relation")

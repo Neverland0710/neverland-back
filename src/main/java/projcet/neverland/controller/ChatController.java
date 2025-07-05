@@ -20,7 +20,7 @@ public class ChatController {
 
     private final ChatService chatService;
 
-    // ✅ 기존 FastAPI 대화 연동 API (그대로 유지)
+    // 기존 FastAPI 대화 연동 API (그대로 유지)
     @PostMapping(value = "/ask", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<Map>> askChat(@RequestBody Map<String, String> request) {
         String authKeyId = request.get("authKeyId");
@@ -32,7 +32,7 @@ public class ChatController {
                 .doOnNext(res -> System.out.println("📥 FastAPI 응답: " + res));
     }
 
-    // ✅ 새로 추가된: 유저 ID로 고인 관계 조회
+    // 새로 추가된: 유저 ID로 고인 관계 조회
     @GetMapping("/relation")
     public ResponseEntity<Map<String, String>> getRelation(@RequestParam String userId) {
         String relation = chatService.getRelationByUserId(userId);

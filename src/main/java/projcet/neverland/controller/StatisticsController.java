@@ -19,7 +19,7 @@ public class StatisticsController {
             Statistics stat = statisticsService.getStatistics(userId);
             return ResponseEntity.ok(stat);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).body("❌ 통계 정보 없음");
+            return ResponseEntity.status(404).body("통계 정보 없음");
         }
     }
 }

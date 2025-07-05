@@ -37,7 +37,7 @@ public class PhotoController {
     private static final String UPLOAD_DIR = "C:/neverland-uploads/images/";
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "📤 사진 업로드", description = "사진 파일과 정보를 업로드하고 벡터DB에 등록합니다.")
+    @Operation(summary = "사진 업로드", description = "사진 파일과 정보를 업로드하고 벡터DB에 등록합니다.")
     public ResponseEntity<?> uploadPhoto(
             @RequestParam("authKeyId") String authKeyId,
             @RequestParam("title") String title,
@@ -77,10 +77,10 @@ public class PhotoController {
 
             photoMemorySyncService.registerPhoto(photo.getPhotoId(), authKeyId).subscribe();
 
-            return ResponseEntity.ok("✅ 업로드 성공");
+            return ResponseEntity.ok("업로드 성공");
 
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("❌ 업로드 실패: " + e.getMessage());
+            return ResponseEntity.status(500).body("업로드 실패: " + e.getMessage());
         }
     }
 
@@ -103,13 +103,13 @@ public class PhotoController {
                     statisticsService.recalculatePhotoCount(userId);
                 });
 
-                return ResponseEntity.ok("✅ 삭제 완료");
+                return ResponseEntity.ok("삭제 완료");
             } else {
-                return ResponseEntity.status(404).body("❌ 해당 사진 없음");
+                return ResponseEntity.status(404).body("해당 사진 없음");
             }
 
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("❌ 삭제 중 오류 발생: " + e.getMessage());
+            return ResponseEntity.status(500).body("삭제 중 오류 발생: " + e.getMessage());
         }
     }
 
