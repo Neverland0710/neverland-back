@@ -15,17 +15,28 @@ jobs:
       - name: 🔐 Decode PEM key
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d > key.pem
-          ls -l key.pem  # 파일 생성 확인 (디버깅용)
           chmod 400 ./key.pem
+          ls -l ./key.pem
 
       - name: 🚀 Deploy to EC2 and run
         run: |
           ssh -o StrictHostKeyChecking=no -i ./key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
             echo "🔄 Pulling latest code..."
-            cd ~/neverland-back || git clone https://github.com/Neverland0710/neverland-back.git && cd neverland-back
+
+            if [ ! -d "/home/ubuntu/neverland-back" ]; then
+              git clone https://github.com/Neverland0710/neverland-back.git /home/ubuntu/neverland-back
+            fi
+
+            cd /home/ubuntu/neverland-back
             git pull origin main
+
+            echo "⚙️ Building Spring Boot app..."
             ./gradlew build -x test
+
+            echo "🛑 Killing previous process if exists..."
             pkill -f 'java -jar' || true
+
+            echo "🚀 Starting application..."
             nohup java -jar build/libs/*.jar > app.log 2>&1 &
           EOF
