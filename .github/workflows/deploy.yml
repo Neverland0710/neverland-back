@@ -22,8 +22,11 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ./key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
-            echo "🔄 Pulling latest code..."
+            echo "📦 Installing Java (if not present)..."
+            sudo apt update
+            sudo apt install -y openjdk-17-jdk
 
+            echo "🔄 Pulling latest code..."
             if [ ! -d "/home/ubuntu/neverland-back" ]; then
               git clone https://github.com/Neverland0710/neverland-back.git /home/ubuntu/neverland-back
             fi
@@ -32,7 +35,7 @@ jobs:
             git pull origin main
 
             echo "⚙️ Making gradlew executable..."
-            chmod +x ./gradlew     # ✅ 여기가 핵심!!
+            chmod +x ./gradlew
 
             echo "⚙️ Building Spring Boot app..."
             ./gradlew build -x test
