@@ -45,4 +45,4 @@ jobs:
 
             echo "🚀 Starting application..."
             nohup java -jar build/libs/*.jar > app.log 2>&1 &
-          EOF
+          EOF 
