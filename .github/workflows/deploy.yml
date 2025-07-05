@@ -15,11 +15,12 @@ jobs:
       - name: 🔐 Decode PEM key
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d > key.pem
-          chmod 400 key.pem
+          ls -l key.pem  # 파일 생성 확인 (디버깅용)
+          chmod 400 ./key.pem
 
       - name: 🚀 Deploy to EC2 and run
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i ./key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
             echo "🔄 Pulling latest code..."
             cd ~/neverland-back || git clone https://github.com/Neverland0710/neverland-back.git && cd neverland-back
