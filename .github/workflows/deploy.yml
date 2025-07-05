@@ -31,6 +31,9 @@ jobs:
             cd /home/ubuntu/neverland-back
             git pull origin main
 
+            echo "⚙️ Making gradlew executable..."
+            chmod +x ./gradlew     # ✅ 여기가 핵심!!
+
             echo "⚙️ Building Spring Boot app..."
             ./gradlew build -x test
 
