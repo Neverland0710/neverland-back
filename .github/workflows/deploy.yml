@@ -43,7 +43,7 @@ jobs:
             pkill -f 'java -jar' || true
 
             echo "🚀 Starting application..."
-            nohup java -jar build/libs/*.jar > app.log 2>&1 &
+            nohup java -jar build/libs/neverland-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
           EOF
       
        
