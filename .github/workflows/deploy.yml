@@ -30,7 +30,6 @@ jobs:
             if [ ! -d "/home/ubuntu/neverland-back" ]; then
               git clone https://github.com/Neverland0710/neverland-back.git /home/ubuntu/neverland-back
             fi
-
             cd /home/ubuntu/neverland-back
             git pull origin main
 
@@ -45,4 +44,5 @@ jobs:
 
             echo "🚀 Starting application..."
             nohup java -jar build/libs/*.jar > app.log 2>&1 &
-          EOF 
+          EOF
+       
