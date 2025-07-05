@@ -23,13 +23,13 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ./key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
             echo "📦 Installing Java (if not present)..."
-            sudo apt update
-            sudo apt install -y openjdk-17-jdk
+            sudo apt update && sudo apt install -y openjdk-17-jdk
 
             echo "🔄 Pulling latest code..."
             if [ ! -d "/home/ubuntu/neverland-back" ]; then
               git clone https://github.com/Neverland0710/neverland-back.git /home/ubuntu/neverland-back
             fi
+
             cd /home/ubuntu/neverland-back
             git pull origin main
 
@@ -39,10 +39,11 @@ jobs:
             echo "⚙️ Building Spring Boot app..."
             ./gradlew build -x test
 
-            echo "🛑 Killing previous process if exists..."
+            echo "🧹 Killing previous process if exists..."
             pkill -f 'java -jar' || true
 
             echo "🚀 Starting application..."
             nohup java -jar build/libs/*.jar > app.log 2>&1 &
           EOF
+      
        
