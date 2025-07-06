@@ -22,9 +22,10 @@ jobs:
           envs: DB_URL,DB_USERNAME,DB_PASSWORD,JWT_SECRET,S3_BUCKET_NAME,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,FIREBASE_CONFIG_JSON
           script: |
             echo "📁 디렉토리 이동 및 코드 업데이트"
-            cd /root/neverland
+            cd /home/ubuntu/neverland-back/neverland-back
             git pull origin main
 
             echo "⚙️ 도커 재시작"
             docker compose down
-            docker compose up -d --build 
+            docker compose up -d --build
+           
