@@ -41,31 +41,44 @@ jobs:
             cd /home/ubuntu/neverland-back
             git pull origin main
 
-            echo "🧹 Stopping existing containers..."
-            sudo docker-compose down || true
-
-            echo "🏗️ Building and starting containers..."
-            sudo docker-compose up -d --build
-
-            echo "🧹 Cleaning up unused Docker images..."
-            sudo docker image prune -f
-
-            echo "✅ Deployment completed!"
-
-            echo "📋 Container status:"
-            sudo docker-compose ps
-
-            echo "📋 Waiting for application to start..."
-            sleep 30
-
-            echo "📋 Application health check..."
-            if curl -f http://localhost:8086/actuator/health 2>/dev/null; then
-              echo "🟢 Application is healthy!"
-            else
-              echo "🔴 Health check failed. Checking logs..."
-              sudo docker-compose logs spring-server --tail 50
-            fi
-
-            echo "📋 Final container status:"
-            sudo docker ps | grep spring-server
-          EOF
+            echo "📝 Creating .env file from secrets..."
+            cat <<EOL > .env
+  DB_URL=${{ secrets.DB_URL }}
+  DB_USERNAME=${{ secrets.DB_USERNAME }}
+  DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+  AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION=${{ secrets.AWS_REGION }}
+  S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+  JWT_SECRET=${{ secrets.JWT_SECRET }}
+  FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
+  EOL
+  
+  echo "🧹 Stopping existing containers..."
+  sudo docker-compose down || true
+  
+  echo "🏗️ Building and starting containers..."
+  sudo docker-compose up -d --build
+  
+  echo "🧹 Cleaning up unused Docker images..."
+  sudo docker image prune -f
+  
+  echo "✅ Deployment completed!"
+  
+  echo "📋 Container status:"
+  sudo docker-compose ps
+  
+  echo "📋 Waiting for application to start..."
+  sleep 30
+  
+  echo "📋 Application health check..."
+  if curl -f http://localhost:8086/actuator/health 2>/dev/null; then
+  echo "🟢 Application is healthy!"
+  else
+  echo "🔴 Health check failed. Checking logs..."
+  sudo docker-compose logs spring-server --tail 50
+  fi
+  
+  echo "📋 Final container status:"
+  sudo docker ps | grep spring-server
+  EOF
