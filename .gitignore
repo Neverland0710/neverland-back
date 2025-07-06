@@ -33,6 +33,48 @@ out/
 /nbdist/
 /.nb-gradle/
 
+### 기존 민감한 파일들 ###
 src/main/resources/firebase_adminsdk.json
 src/main/resources/application.properties
 
+### 새로 추가할 민감한 파일들 ###
+# 환경 변수 파일들
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# 운영 환경 설정 파일들
+src/main/resources/application-prod.properties
+src/main/resources/application-local.properties
+src/main/resources/application-dev.properties
+
+# SSH 키들
+*.pem
+*.key
+key.pem
+
+# 로그 파일들
+*.log
+app.log
+logs/
+
+# 임시 파일들
+*.tmp
+*.temp
+
+# Docker 오버라이드
+docker-compose.override.yml
+
+# 맥OS
+.DS_Store
+.DS_Store?
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# 리눅스
+*~

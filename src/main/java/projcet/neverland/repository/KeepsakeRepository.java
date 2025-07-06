@@ -14,5 +14,6 @@ public interface KeepsakeRepository extends JpaRepository<Keepsake, String> {
     List<Keepsake> findByAuthKeyIdOrderByCreatedAtAsc(String authKeyId);
     List<Keepsake> findByAuthKeyIdOrderByItemNameAsc(String authKeyId);
     int countByAuthKeyIdIn(List<String> authKeyIds);
+    Optional<Keepsake> findByImagePath(String imagePath);
 }
 

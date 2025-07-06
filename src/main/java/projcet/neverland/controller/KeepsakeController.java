@@ -12,11 +12,10 @@ import projcet.neverland.entity.Keepsake;
 import projcet.neverland.repository.AuthKeyRepository;
 import projcet.neverland.repository.KeepsakeRepository;
 import projcet.neverland.service.KeepsakeMemorySyncService;
+import projcet.neverland.service.S3Service;
 import projcet.neverland.service.StatisticsService;
 import projcet.neverland.service.VectorSyncService;
 
-import java.io.File;
-import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,12 +30,10 @@ public class KeepsakeController {
     private final StatisticsService statisticsService;
     private final VectorSyncService vectorSyncService;
     private final KeepsakeMemorySyncService keepsakeMemorySyncService;
-
-    private final String uploadDir = "C:/neverland-uploads/keeps";
-    private final String urlPrefix = "/keeps/";
+    private final S3Service s3Service;
 
     @PostMapping("/upload")
-    @Operation(summary = "유품 등록", description = "유품 정보 및 이미지를 등록합니다.")
+    @Operation(summary = "유품 등록", description = "유품 정보 및 이미지를 S3에 등록합니다.")
     public ResponseEntity<?> uploadKeepsake(
             @RequestParam("authKeyId") String authKeyId,
             @RequestParam("item_name") String itemName,
@@ -47,14 +44,10 @@ public class KeepsakeController {
             @RequestPart(value = "file", required = false) MultipartFile file
     ) {
         try {
-            String filePath = null;
+            String imageUrl = null;
             if (file != null && !file.isEmpty()) {
-                String uuid = UUID.randomUUID().toString();
-                String fileName = uuid + "_" + file.getOriginalFilename();
-                Path fullPath = Paths.get(uploadDir, fileName);
-                Files.createDirectories(fullPath.getParent());
-                Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
-                filePath = fullPath.toString();
+                // S3에 파일 업로드
+                imageUrl = s3Service.uploadFile(file, "keepsakes");
             }
 
             Keepsake keepsake = new Keepsake(
@@ -65,7 +58,7 @@ public class KeepsakeController {
                     description,
                     specialStory,
                     estimatedValue,
-                    filePath,
+                    imageUrl, // S3 URL 저장
                     LocalDateTime.now()
             );
             keepsakeRepository.save(keepsake);
@@ -108,10 +101,8 @@ public class KeepsakeController {
         List<KeepsakeDto> result = keepsakes.stream().map(k -> {
             KeepsakeDto dto = new KeepsakeDto();
             BeanUtils.copyProperties(k, dto);
-            if (k.getImagePath() != null) {
-                String fileName = Paths.get(k.getImagePath()).getFileName().toString();
-                dto.setImagePath(urlPrefix + fileName);
-            }
+            // S3 URL을 그대로 사용
+            dto.setImagePath(k.getImagePath());
             dto.setCreatedAt(k.getCreatedAt().toString().substring(0, 10));
             return dto;
         }).collect(Collectors.toList());
@@ -120,16 +111,21 @@ public class KeepsakeController {
     }
 
     @DeleteMapping("/delete")
-    @Operation(summary = "유품 삭제", description = "imagePath(URL) 기준으로 유품 DB 레코드 및 파일 삭제")
+    @Operation(summary = "유품 삭제", description = "imagePath(S3 URL) 기준으로 유품 DB 레코드 및 S3 파일 삭제")
     public ResponseEntity<?> deleteKeepsake(@RequestParam("imageUrl") String imageUrl) {
         try {
-            String filename = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-            File file = new File(uploadDir + "/" + filename);
-            if (file.exists()) file.delete();
+            // DB에서 유품 찾기
+            Optional<Keepsake> keepsakeOpt = keepsakeRepository.findByImagePath(imageUrl);
 
-            Optional<Keepsake> keepsakeOpt = keepsakeRepository.findByImagePathContaining(filename);
             if (keepsakeOpt.isPresent()) {
                 Keepsake keepsake = keepsakeOpt.get();
+
+                // S3에서 파일 삭제
+                if (keepsake.getImagePath() != null) {
+                    s3Service.deleteFile(keepsake.getImagePath());
+                }
+
+                // DB에서 삭제
                 keepsakeRepository.delete(keepsake);
 
                 // 사용자 ID 조회 후 FastAPI 벡터 삭제 및 통계 감소
@@ -153,5 +149,4 @@ public class KeepsakeController {
             return ResponseEntity.status(500).body("삭제 중 예외 발생: " + e.getMessage());
         }
     }
-
 }

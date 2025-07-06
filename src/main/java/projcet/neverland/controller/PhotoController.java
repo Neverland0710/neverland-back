@@ -12,10 +12,10 @@ import projcet.neverland.entity.PhotoAlbum;
 import projcet.neverland.repository.AuthKeyRepository;
 import projcet.neverland.repository.PhotoAlbumRepository;
 import projcet.neverland.service.PhotoMemorySyncService;
+import projcet.neverland.service.S3Service;
 import projcet.neverland.service.StatisticsService;
 import projcet.neverland.service.VectorSyncService;
 
-import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,11 +33,10 @@ public class PhotoController {
     private final StatisticsService statisticsService;
     private final VectorSyncService vectorSyncService;
     private final PhotoMemorySyncService photoMemorySyncService;
-
-    private static final String UPLOAD_DIR = "C:/neverland-uploads/images/";
+    private final S3Service s3Service;
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "사진 업로드", description = "사진 파일과 정보를 업로드하고 벡터DB에 등록합니다.")
+    @Operation(summary = "사진 업로드", description = "사진 파일과 정보를 S3에 업로드하고 벡터DB에 등록합니다.")
     public ResponseEntity<?> uploadPhoto(
             @RequestParam("authKeyId") String authKeyId,
             @RequestParam("title") String title,
@@ -45,26 +44,21 @@ public class PhotoController {
             @RequestParam("photo_date") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate photoDate,
             @RequestPart("file") MultipartFile file
     ) {
-        String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        String imagePath = "/images/" + filename;
-
         try {
-            File directory = new File(UPLOAD_DIR);
-            if (!directory.exists()) directory.mkdirs();
+            // S3에 파일 업로드
+            String imageUrl = s3Service.uploadFile(file, "photos");
 
-            file.transferTo(new File(UPLOAD_DIR + filename));
-        } catch (Exception e) {
-            imagePath = null;
-        }
+            if (imageUrl == null) {
+                return ResponseEntity.status(500).body("파일 업로드 실패");
+            }
 
-        try {
             PhotoAlbum photo = PhotoAlbum.builder()
                     .photoId(UUID.randomUUID().toString())
                     .authKeyId(authKeyId)
                     .title(title)
                     .description(description)
                     .photoDate(photoDate)
-                    .imagePath(imagePath != null ? imagePath : "FILE_SAVE_FAILED")
+                    .imagePath(imageUrl)
                     .fileFormat(file.getContentType() != null ? file.getContentType() : "unknown")
                     .fileSize(file.getSize())
                     .uploadedAt(LocalDateTime.now())
@@ -85,16 +79,22 @@ public class PhotoController {
     }
 
     @DeleteMapping("/delete")
-    @Operation(summary = "🗑️ 사진 삭제", description = "이미지 경로를 기준으로 DB, 파일, 벡터DB에서 삭제합니다.")
+    @Operation(summary = "🗑️ 사진 삭제", description = "이미지 경로를 기준으로 DB, S3 파일, 벡터DB에서 삭제합니다.")
     public ResponseEntity<?> deletePhoto(@RequestParam("imageUrl") String imageUrl) {
         try {
+            // S3 URL에서 파일명 추출
             String filename = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-            File file = new File(UPLOAD_DIR + filename);
-            if (file.exists()) file.delete();
 
+            // DB에서 사진 찾기 (기존 메서드 사용)
             Optional<PhotoAlbum> target = photoAlbumRepository.findByImagePathContaining(filename);
+
             if (target.isPresent()) {
                 PhotoAlbum photo = target.get();
+
+                // S3에서 파일 삭제
+                s3Service.deleteFile(imageUrl);
+
+                // DB에서 삭제
                 photoAlbumRepository.delete(photo);
 
                 authKeyRepository.findByAuthKeyId(photo.getAuthKeyId()).ifPresent(authKey -> {

@@ -1,4 +1,4 @@
-name: 🚀 Deploy Spring Boot to EC2
+name: 🐳 Deploy Spring Boot with Docker to EC2
 
 on:
   push:
@@ -12,18 +12,27 @@ jobs:
       - name: 📦 Checkout source
         uses: actions/checkout@v3
 
-      - name: 🔐 Decode PEM key
+      - name: 🔐 Configure SSH
         run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d > key.pem
-          chmod 400 ./key.pem
-          ls -l ./key.pem
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: 🚀 Deploy to EC2 and run
+      - name: 🐳 Deploy with Docker to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i ./key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
-            echo "📦 Installing Java (if not present)..."
-            sudo apt update && sudo apt install -y openjdk-17-jdk
+          
+            echo "🔧 Installing Docker & Docker Compose (if not present)..."
+            if ! command -v docker &> /dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y docker.io docker-compose
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sudo usermod -aG docker $USER
+              # 현재 세션에서 docker 명령어 사용하기 위해 sudo 사용
+            fi
 
             echo "🔄 Pulling latest code..."
             if [ ! -d "/home/ubuntu/neverland-back" ]; then
@@ -33,17 +42,88 @@ jobs:
             cd /home/ubuntu/neverland-back
             git pull origin main
 
-            echo "⚙️ Making gradlew executable..."
-            chmod +x ./gradlew
+            echo "📝 Creating .env file from secrets..."
+            cat <<EOL > .env
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_REGION=${{ secrets.AWS_REGION }}
+            S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
+            EOL
 
-            echo "⚙️ Building Spring Boot app..."
-            ./gradlew build -x test
+            echo "📝 Creating application-prod.properties from secrets..."
+            mkdir -p src/main/resources
+            cat <<EOL > src/main/resources/application-prod.properties
+            # Server Configuration
+            server.port=8086
 
-            echo "🧹 Killing previous process if exists..."
-            pkill -f 'java -jar' || true
+            # Database Configuration
+            spring.datasource.url=\${SPRING_DATASOURCE_URL}
+            spring.datasource.username=\${SPRING_DATASOURCE_USERNAME}
+            spring.datasource.password=\${SPRING_DATASOURCE_PASSWORD}
+            spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
-            echo "🚀 Starting application..."
-            nohup java -jar build/libs/neverland-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
+            # JPA Configuration
+            spring.jpa.hibernate.ddl-auto=update
+            spring.jpa.show-sql=false
+            spring.jpa.properties.hibernate.format_sql=true
+            spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+            # AWS Configuration
+            aws.accessKeyId=\${AWS_ACCESS_KEY_ID}
+            aws.region=\${AWS_REGION}
+            aws.secretAccessKey=\${AWS_SECRET_ACCESS_KEY}
+
+            # S3 Configuration
+            cloud.aws.s3.bucket=\${S3_BUCKET_NAME}
+            cloud.aws.region.static=\${AWS_REGION}
+            cloud.aws.stack.auto=false
+
+            # JWT Configuration
+            jwt.secret=\${JWT_SECRET}
+            jwt.expiration=86400000
+
+            # Firebase Configuration
+            firebase.config.json=\${FIREBASE_CONFIG_JSON}
+
+            # Logging Configuration
+            logging.level.org.springframework.web=INFO
+            logging.level.com.neverland=DEBUG
+
+            # Actuator for health check
+            management.endpoints.web.exposure.include=health
+            management.endpoint.health.show-details=always
+            EOL
+
+            echo "🧹 Stopping existing containers..."
+            sudo docker-compose down || true
+
+            echo "🏗️ Building and starting containers..."
+            sudo docker-compose up -d --build
+
+            echo "🧹 Cleaning up unused Docker images..."
+            sudo docker image prune -f
+
+            echo "✅ Deployment completed!"
+          
+            echo "📋 Container status:"
+            sudo docker-compose ps
+          
+            echo "📋 Waiting for application to start..."
+            sleep 30
+          
+            echo "📋 Application health check..."
+            if curl -f http://localhost:8086/actuator/health 2>/dev/null; then
+              echo "🟢 Application is healthy!"
+            else
+              echo "🔴 Health check failed. Checking logs..."
+              sudo docker-compose logs spring-server --tail 50
+            fi
+          
+            echo "📋 Final container status:"
+            sudo docker ps | grep spring-server
           EOF
-      
-       
