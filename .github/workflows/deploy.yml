@@ -26,6 +26,6 @@ jobs:
             git pull origin main
 
             echo "⚙️ 도커 재시작"
-            docker compose down
-            docker compose up -d --build
+            docker-compose down
+            docker-compose up -d --build
            
