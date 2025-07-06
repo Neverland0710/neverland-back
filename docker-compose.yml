@@ -8,15 +8,16 @@ services:
       - "8086:8086"
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: "${DB_URL}"
-      SPRING_DATASOURCE_USERNAME: "${DB_USERNAME}"
-      SPRING_DATASOURCE_PASSWORD: "${DB_PASSWORD}"
+      DB_URL: "${DB_URL}"
+      DB_USERNAME: "${DB_USERNAME}"
+      DB_PASSWORD: "${DB_PASSWORD}"
       JWT_SECRET: "${JWT_SECRET}"
       FIREBASE_CONFIG_JSON: "${FIREBASE_CONFIG_JSON}"
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
       AWS_REGION: "${AWS_REGION}"
       S3_BUCKET_NAME: "${S3_BUCKET_NAME}"
+
     restart: always
     networks:
       - neverland-network
