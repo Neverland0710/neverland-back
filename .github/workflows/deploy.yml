@@ -27,4 +27,4 @@ jobs:
 
             echo "⚙️ 도커 재시작"
             docker compose down
-            docker compose up -d --build
+            docker compose up -d --build 
