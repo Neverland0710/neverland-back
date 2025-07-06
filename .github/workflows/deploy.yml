@@ -18,15 +18,15 @@ jobs:
       - name: 📂 Create .env file
         run: |
           cat <<EOL > .env
-  DB_URL=${{ secrets.DB_URL }}
-  DB_USERNAME=${{ secrets.DB_USERNAME }}
-  DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-  JWT_SECRET=${{ secrets.JWT_SECRET }}
-  S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
-  AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  AWS_REGION=${{ secrets.AWS_REGION }}
-  EOL
+DB_URL=${{ secrets.DB_URL }}
+DB_USERNAME=${{ secrets.DB_USERNAME }}
+DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+JWT_SECRET=${{ secrets.JWT_SECRET }}
+S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+AWS_REGION=${{ secrets.AWS_REGION }}
+EOL
 
 - name: 🔑 Add SSH Key
   run: |
@@ -41,4 +41,4 @@ jobs:
       git pull https://github.com/your-github-username/your-repo-name.git
       docker compose down
       docker compose up -d --build
-    EOF
+EOF
