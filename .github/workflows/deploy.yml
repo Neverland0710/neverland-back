@@ -29,6 +29,9 @@ jobs:
 
       - name: 🚀 Deploy to EC2 (jar + env + docker)
         run: |
+          echo "📁 EC2 디렉토리 생성..."
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p /home/ubuntu/app"
+          
           echo "📤 .jar 업로드 중..."
           scp -o StrictHostKeyChecking=no build/libs/*.jar ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/app/app.jar
           
