@@ -54,6 +54,7 @@ jobs:
           EOL'
       
           echo "🐳 Docker 재시작"
+          docker rm -f spring-server || true
           docker-compose down || true
           docker-compose up --build -d
           EOF
