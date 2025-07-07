@@ -32,37 +32,29 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
 
-            echo "📁 디렉토리 준비"
-            mkdir -p ~/app
+            echo "📁 디렉토리 이동"
             cd ~/app
 
-            if [ ! -d ".git" ]; then
-              echo "📥 저장소 클론"
-              git clone https://github.com/${{ github.repository }} .
-            else
-              echo "🔄 저장소 pull"
-              git pull origin main
-            fi
-
             echo "📝 .env 생성 중"
-cat > .env <<EOL
-AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-AWS_REGION=$AWS_REGION
-S3_BUCKET_NAME=$S3_BUCKET_NAME
-  
-DB_URL=$DB_URL
-DB_USERNAME=$DB_USERNAME
-DB_PASSWORD=$DB_PASSWORD
-  
-JWT_SECRET=$JWT_SECRET
-FIREBASE_CONFIG_JSON=$FIREBASE_CONFIG_JSON
-  
-SERVER_PORT=8086
-SPRING_PROFILES_ACTIVE=prod
-EOL
-  
-            echo "🐳 Docker 컨테이너 재시작"
-            docker-compose down || true
-            docker-compose up --build -d
-EOF
+            bash -c 'cat > .env <<EOL
+          AWS_ACCESS_KEY_ID='"$AWS_ACCESS_KEY_ID"'
+          AWS_SECRET_ACCESS_KEY='"$AWS_SECRET_ACCESS_KEY"'
+          AWS_REGION='"$AWS_REGION"'
+          S3_BUCKET_NAME='"$S3_BUCKET_NAME"'
+
+          DB_URL='"$DB_URL"'
+          DB_USERNAME='"$DB_USERNAME"'
+          DB_PASSWORD='"$DB_PASSWORD"'
+
+          JWT_SECRET='"$JWT_SECRET"'
+          FIREBASE_CONFIG_JSON='"$FIREBASE_CONFIG_JSON"'
+
+          SERVER_PORT=8086
+          SPRING_PROFILES_ACTIVE=prod
+          EOL'
+      
+          echo "🐳 Docker 재시작"
+          docker-compose down || true
+          docker-compose up --build -d
+          EOF
+
