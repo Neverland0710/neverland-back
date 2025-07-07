@@ -7,7 +7,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: 📦 Checkout source
         uses: actions/checkout@v3
@@ -18,45 +17,28 @@ jobs:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
       - name: 📡 Deploy to EC2
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          DB_URL: ${{ secrets.DB_URL }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          FIREBASE_CONFIG_JSON: ${{ secrets.FIREBASE_CONFIG_JSON }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            set -e
-
-            echo "📁 디렉토리 이동"
             cd ~/app
-
-            echo "📝 템플릿 생성"
-            cat > .env.template <<EOL
-          AWS_ACCESS_KEY_ID=\$AWS_ACCESS_KEY_ID
-          AWS_SECRET_ACCESS_KEY=\$AWS_SECRET_ACCESS_KEY
-          AWS_REGION=\$AWS_REGION
-          S3_BUCKET_NAME=\$S3_BUCKET_NAME
-          DB_URL=\$DB_URL
-          DB_USERNAME=\$DB_USERNAME
-          DB_PASSWORD=\$DB_PASSWORD
-          JWT_SECRET=\$JWT_SECRET
-          FIREBASE_CONFIG_JSON=\$FIREBASE_CONFIG_JSON
-          SERVER_PORT=8086
-          SPRING_PROFILES_ACTIVE=prod
-          EOL
-      
-          echo "🔁 변수 치환"
-          envsubst < .env.template > .env
-      
-          echo "🐳 Docker 재시작"
-          docker rm -f spring-server || true
-          docker-compose down || true
-          docker-compose up --build -d
+          
+            docker stop spring-server || true
+            docker rm spring-server || true
+            docker build -t spring-app .
+          
+            docker run -d \
+              --name spring-server \
+              -p 8086:8086 \
+              -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
+              -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+              -e AWS_REGION="${{ secrets.AWS_REGION }}" \
+              -e S3_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}" \
+              -e DB_URL="${{ secrets.DB_URL }}" \
+              -e DB_USERNAME="${{ secrets.DB_USERNAME }}" \
+              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              -e FIREBASE_CONFIG_JSON="${{ secrets.FIREBASE_CONFIG_JSON }}" \
+              -e SERVER_PORT=8086 \
+              -e SPRING_PROFILES_ACTIVE=prod \
+              --restart always \
+              spring-app
           EOF
-
-
