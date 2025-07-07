@@ -27,21 +27,29 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      - name: 📁 Copy files to EC2
-        run: |
-          # EC2에 파일들 복사
-          scp -o StrictHostKeyChecking=no -r ./build/libs/*.jar ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/app/
-          scp -o StrictHostKeyChecking=no ./Dockerfile ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/app/
-
       - name: 📡 Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd ~/app
+          # 전체 프로젝트를 tar로 압축해서 한 번에 전송
+          tar -czf project.tar.gz --exclude='.git' --exclude='node_modules' .
           
+          scp -o StrictHostKeyChecking=no project.tar.gz ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/
+          
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            # 기존 app 폴더 정리하고 새로 압축 해제
+            rm -rf ~/app
+            mkdir -p ~/app
+            cd ~/app
+            tar -xzf ~/project.tar.gz
+            rm ~/project.tar.gz
+          
+            # Docker 컨테이너 정리
             docker stop spring-server || true
             docker rm spring-server || true
+          
+            # Docker 이미지 빌드
             docker build -t spring-app .
           
+            # Docker 컨테이너 실행
             docker run -d \
               --name spring-server \
               -p 8086:8086 \
@@ -58,4 +66,7 @@ jobs:
               -e SPRING_PROFILES_ACTIVE=prod \
               --restart always \
               spring-app
+          
+            echo "✅ 배포 완료!"
+            docker ps | grep spring-server
           EOF
