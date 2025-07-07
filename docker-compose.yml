@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  spring-server:
+    build: .
+    container_name: spring-server
+    ports:
+      - "8086:8086"
+    env_file:
+      - .env
+    restart: always
+    networks:
+      - neverland-network
+
+networks:
+  neverland-network:
+    driver: bridge

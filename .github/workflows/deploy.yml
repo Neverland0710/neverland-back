@@ -22,7 +22,7 @@ jobs:
             rm -rf app
           
             # GitHub에서 코드 받아오기
-            git clone https://github.com/Neverland0710/neverland-back.git app
+            git clone https://github.com/your-username/neverland.git app
             cd app
           
             # Java 17 설치 (만약 없다면)
@@ -37,35 +37,25 @@ jobs:
             docker stop spring-server || true
             docker rm spring-server || true
           
-            # Dockerfile 생성 (JAR 파일 경로 맞춤)
-            cat > Dockerfile << 'DOCKEREOF'
-          FROM openjdk:17-jdk-slim
-          WORKDIR /app
-          COPY build/libs/*.jar app.jar
-          EXPOSE 8086
-          ENTRYPOINT ["java", "-jar", "app.jar"]
-          DOCKEREOF
+            # 환경변수 파일 생성
+            cat > .env << 'ENVEOF'
+          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION=${{ secrets.AWS_REGION }}
+          S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+          DB_URL=${{ secrets.DB_URL }}
+          DB_USERNAME=${{ secrets.DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
+          SERVER_PORT=8086
+          SPRING_PROFILES_ACTIVE=prod
+          ENVEOF
           
-            # Docker 빌드 및 실행
-            docker build -t spring-app .
-          
-            docker run -d \
-              --name spring-server \
-              -p 8086:8086 \
-              -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
-              -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-              -e AWS_REGION="${{ secrets.AWS_REGION }}" \
-              -e S3_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}" \
-              -e DB_URL="${{ secrets.DB_URL }}" \
-              -e DB_USERNAME="${{ secrets.DB_USERNAME }}" \
-              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
-              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-              -e FIREBASE_CONFIG_JSON="${{ secrets.FIREBASE_CONFIG_JSON }}" \
-              -e SERVER_PORT=8086 \
-              -e SPRING_PROFILES_ACTIVE=prod \
-              --restart always \
-              spring-app
+            # Docker Compose로 빌드 및 실행
+            docker-compose down || true
+            docker-compose up --build -d
           
             echo "✅ 배포 완료!"
-            docker ps | grep spring-server
+            docker-compose ps
           EOF
