@@ -21,29 +21,44 @@ jobs:
           script: |
             cd ~/app
             
+            # 기존 컨테이너 정리
+            docker-compose down || true
+            docker system prune -f
+            
             # 기존 소스 정리하고 다시 clone
             rm -rf spring-server
             git clone https://github.com/Neverland0710/neverland-back.git spring-server
             
-            # .env 생성 (.env는 git에 포함 X)
-            cat <<EOF > spring-server/.env
-            DB_URL=${{ secrets.DB_URL }}
-            DB_USERNAME=${{ secrets.DB_USERNAME }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
-            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
-            AWS_REGION=${{ secrets.AWS_REGION }}
-            SERVER_PORT=8086
-            SPRING_PROFILES_ACTIVE=prod
+            # docker-compose.yml 생성 (환경변수 포함)
+            cat > docker-compose.yml << 'EOF'
+            services:
+              spring-server:
+                build:
+                  context: ./spring-server
+                ports:
+                  - "8086:8086"
+                environment:
+                  - SPRING_DATASOURCE_URL=${{ secrets.DB_URL }}
+                  - SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }}
+                  - SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}
+                  - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+                  - JWT_SECRET=${{ secrets.JWT_SECRET }}
+                  - FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
+                  - AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+                  - AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  - S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+                  - AWS_REGION=${{ secrets.AWS_REGION }}
+                  - SERVER_PORT=8086
+                  - SPRING_PROFILES_ACTIVE=prod
+                container_name: spring-server
+                restart: always
             EOF
             
             # 도커 실행
-            docker-compose down || true
-            docker-compose build
+            docker-compose build --no-cache
             docker-compose up -d
             
             # 상태 확인
+            sleep 15
             docker-compose ps
+            docker-compose logs spring-server
