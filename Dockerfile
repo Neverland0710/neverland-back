@@ -1,5 +1,6 @@
 FROM openjdk:17-jdk-slim
-WORKDIR /app
-COPY app.jar app.jar
+VOLUME /tmp
+ARG JAR_FILE=build/libs/*.jar
+COPY ${JAR_FILE} app.jar
 EXPOSE 8086
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java","-Xms256m","-Xmx512m","-jar","/app.jar"]
