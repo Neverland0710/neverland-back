@@ -25,13 +25,9 @@ jobs:
             git clone https://github.com/your-username/neverland.git app
             cd app
           
-            # Java 17 설치 (만약 없다면)
-            sudo apt update
-            sudo apt install -y openjdk-17-jdk
+            # Java 설치 확인 (Docker에서 빌드하므로 생략 가능)
           
-            # Gradle 빌드
-            chmod +x ./gradlew
-            ./gradlew clean build -x test
+            # Gradle 빌드 생략 - Docker에서 처리
           
             # Docker 컨테이너 정리
             docker stop spring-server || true
