@@ -30,7 +30,7 @@ jobs:
       - name: 🚀 Deploy to EC2 (jar + env + docker)
         run: |
           echo "📤 .jar 업로드 중..."
-          scp build/libs/*.jar ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/app/app.jar
+          scp -o StrictHostKeyChecking=no build/libs/*.jar ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/app/app.jar
           
           echo "📡 EC2 접속 & 배포 실행..."
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
@@ -45,7 +45,7 @@ jobs:
           FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
           AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION=${{ secrets.AWS_REGION }} 
+          AWS_REGION=${{ secrets.AWS_REGION }}
           S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
           SERVER_PORT=8086
           SPRING_PROFILES_ACTIVE=prod
