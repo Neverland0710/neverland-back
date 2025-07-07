@@ -35,27 +35,28 @@ jobs:
             echo "📁 디렉토리 이동"
             cd ~/app
 
-            echo "📝 .env 생성 중"
-            bash -c 'cat > .env <<EOL
-          AWS_ACCESS_KEY_ID='"$AWS_ACCESS_KEY_ID"'
-          AWS_SECRET_ACCESS_KEY='"$AWS_SECRET_ACCESS_KEY"'
-          AWS_REGION='"$AWS_REGION"'
-          S3_BUCKET_NAME='"$S3_BUCKET_NAME"'
-
-          DB_URL='"$DB_URL"'
-          DB_USERNAME='"$DB_USERNAME"'
-          DB_PASSWORD='"$DB_PASSWORD"'
-
-          JWT_SECRET='"$JWT_SECRET"'
-          FIREBASE_CONFIG_JSON='"$FIREBASE_CONFIG_JSON"'
-
+            echo "📝 템플릿 생성"
+            cat > .env.template <<EOL
+          AWS_ACCESS_KEY_ID=\$AWS_ACCESS_KEY_ID
+          AWS_SECRET_ACCESS_KEY=\$AWS_SECRET_ACCESS_KEY
+          AWS_REGION=\$AWS_REGION
+          S3_BUCKET_NAME=\$S3_BUCKET_NAME
+          DB_URL=\$DB_URL
+          DB_USERNAME=\$DB_USERNAME
+          DB_PASSWORD=\$DB_PASSWORD
+          JWT_SECRET=\$JWT_SECRET
+          FIREBASE_CONFIG_JSON=\$FIREBASE_CONFIG_JSON
           SERVER_PORT=8086
           SPRING_PROFILES_ACTIVE=prod
-          EOL'
+          EOL
+      
+          echo "🔁 변수 치환"
+          envsubst < .env.template > .env
       
           echo "🐳 Docker 재시작"
           docker rm -f spring-server || true
           docker-compose down || true
           docker-compose up --build -d
           EOF
+
 
