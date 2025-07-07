@@ -7,4 +7,5 @@ services:
       - "8086:8086"
     env_file:
       - ./spring-server/.env
+    container_name: spring-server
     restart: always
