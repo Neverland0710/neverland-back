@@ -19,6 +19,7 @@ import projcet.neverland.service.VectorSyncService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -71,7 +72,10 @@ public class PhotoController {
 
             photoMemorySyncService.registerPhoto(photo.getPhotoId(), authKeyId).subscribe();
 
-            return ResponseEntity.ok("업로드 성공");
+            return ResponseEntity.ok(Map.of(
+                    "message", "업로드 성공",
+                    "imageUrl", imageUrl
+            ));
 
         } catch (Exception e) {
             return ResponseEntity.status(500).body("업로드 실패: " + e.getMessage());

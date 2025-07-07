@@ -1,75 +1,114 @@
-name: 🚀 Timeout Fixed Deploy
+# .github/workflows/deploy.yml
+name: 🚀 Deploy to EC2 with Docker Compose
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # 타임아웃 15분으로 증가
     steps:
-      - name: 🔐 Connect to EC2 & Deploy Spring
+      - name: 📦 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🚀 Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          command_timeout: 10m  # SSH 명령 타임아웃 10분
           script: |
+            # 📁 애플리케이션 디렉토리로 이동
             cd ~/app
             
-            # 기존 컨테이너 정리
-            docker rm -f spring-server || true
+            # 🧹 기존 컨테이너 정리
+            docker-compose down || true
+            docker system prune -f
             
-            # 소스 업데이트
-            rm -rf neverland-back
-            git clone https://github.com/Neverland0710/neverland-back.git
-            cd neverland-back
+            # 📥 최신 코드 받기
+            rm -rf spring-server
+            git clone https://github.com/Neverland0710/neverland-back.git spring-server
             
-            # 매우 간단한 Dockerfile (빌드 시간 단축)
-            cat > Dockerfile << 'EOF'
-            FROM gradle:8.5.0-jdk17 AS builder
-            WORKDIR /app
-            COPY . .
-            # 빌드 최적화 옵션 추가
-            RUN gradle build -x test --no-daemon --parallel --build-cache \
-                -Dorg.gradle.jvmargs="-Xmx1g -XX:MaxMetaspaceSize=512m" \
-                --max-workers=2
-
-            FROM openjdk:17-jdk-slim
-            WORKDIR /app
-            COPY --from=builder /app/build/libs/*.jar app.jar
-            EXPOSE 8086
-            ENTRYPOINT ["java", "-Xms512m", "-Xmx1g", "-jar", "app.jar"]
+            # 📄 .env 파일 생성 (properties 기준으로 맞춤)
+            cat > spring-server/.env << 'EOF'
+            # 데이터베이스 설정
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            
+            # JWT 설정
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_EXPIRATION=3600000
+            
+            # AWS S3 설정
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_REGION=${{ secrets.AWS_REGION }}
+            S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+            
+            # Firebase 설정
+            FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
             EOF
-
-            # 🔨 빌드
-            echo "🔨 Building Docker image..."
-            docker build --no-cache -t spring-app .
-
-            echo "🚀 Starting container..."
-            docker run -d --name spring-server -p 8086:8086 \
-              -e SPRING_DATASOURCE_URL="${{ secrets.DB_URL }}" \
-              -e SPRING_DATASOURCE_USERNAME="${{ secrets.DB_USERNAME }}" \
-              -e SPRING_DATASOURCE_PASSWORD="${{ secrets.DB_PASSWORD }}" \
-              -e SPRING_DATASOURCE_DRIVER_CLASS_NAME="com.mysql.cj.jdbc.Driver" \
-              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-              -e JWT_EXPIRATION=3600000 \  # ✅ 여기에 추가!
-              -e FIREBASE_CONFIG_JSON='${{ secrets.FIREBASE_CONFIG_JSON }}' \
-              -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
-              -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-              -e S3_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}" \
-              -e AWS_REGION="${{ secrets.AWS_REGION }}" \
-              -e SERVER_PORT="8086" \
-              -e SPRING_PROFILES_ACTIVE="prod" \
-              --restart always \
-              spring-app
-
-            # 상태 확인
-            echo "⏳ Waiting for container to start..."
-            sleep 15
-            docker ps | grep spring-server || echo "❌ Container not running"
-            docker logs spring-server --tail 5 || echo "❌ No logs available"
-            echo "✅ Deployment process completed!"
+            
+            # 📄 docker-compose.yml 생성 (properties 환경변수에 맞춤)
+            cat > docker-compose.yml << 'EOF'
+            services:
+              spring-server:
+                build:
+                  context: ./spring-server
+                ports:
+                  - "8086:8086"
+                environment:
+                  # 데이터베이스 설정 (properties의 ${DB_URL} 등과 매칭)
+                  - DB_URL=${{ secrets.DB_URL }}
+                  - DB_USERNAME=${{ secrets.DB_USERNAME }}
+                  - DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            
+                  # JWT 설정 (properties의 ${JWT_SECRET}과 매칭)
+                  - JWT_SECRET=${{ secrets.JWT_SECRET }}
+                  - JWT_EXPIRATION=3600000
+            
+                  # AWS 설정 (properties의 ${AWS_ACCESS_KEY_ID} 등과 매칭)
+                  - AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+                  - AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  - AWS_REGION=${{ secrets.AWS_REGION }}
+                  - S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+            
+                  # Firebase 설정 (properties의 ${FIREBASE_CONFIG_JSON}과 매칭)
+                  - FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
+                env_file:
+                  - ./spring-server/.env
+                container_name: spring-server
+                restart: always
+                healthcheck:
+                  test: ["CMD-SHELL", "curl -f http://localhost:8086/actuator/health || exit 1"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+                  start_period: 60s
+            EOF
+            
+            # 🐳 Docker Compose 실행
+            echo "🔨 Building application..."
+            docker-compose build --no-cache
+            
+            echo "🚀 Starting application..."
+            docker-compose up -d
+            
+            # ⏳ 애플리케이션 시작 대기
+            echo "⏳ Waiting for application to start..."
+            sleep 30
+            
+            # ✅ 배포 상태 확인
+            echo "📊 Deployment Status:"
+            docker-compose ps
+            
+            echo "📋 Application Logs:"
+            docker-compose logs spring-server --tail 10
+            
+            # 🏥 헬스체크
+            echo "🏥 Health Check:"
+            curl -f http://localhost:8086/actuator/health || echo "❌ Health check failed"
+            
+            echo "✅ Deployment completed!"
