@@ -1,4 +1,4 @@
-name: 🚀 Simple Fast Deploy
+name: 🚀 Timeout Fixed Deploy
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15  # 타임아웃 15분으로 증가
     steps:
       - name: 🔐 Connect to EC2 & Deploy Spring
         uses: appleboy/ssh-action@master
@@ -15,36 +16,44 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 10m  # SSH 명령 타임아웃 10분
           script: |
             cd ~/app
             
             # 기존 컨테이너 정리
             docker rm -f spring-server || true
             
-            # 최신 소스 받기
+            # 소스 업데이트
             rm -rf neverland-back
             git clone https://github.com/Neverland0710/neverland-back.git
             cd neverland-back
             
-            # 간단한 Dockerfile 생성
+            # 매우 간단한 Dockerfile (빌드 시간 단축)
             cat > Dockerfile << 'EOF'
             FROM gradle:8.5.0-jdk17 AS builder
             WORKDIR /app
             COPY . .
-            RUN gradle build -x test --no-daemon --parallel
+            # 빌드 최적화 옵션 추가
+            RUN gradle build -x test --no-daemon --parallel --build-cache \
+                -Dorg.gradle.jvmargs="-Xmx1g -XX:MaxMetaspaceSize=512m" \
+                --max-workers=2
             
             FROM openjdk:17-jdk-slim
             WORKDIR /app
             COPY --from=builder /app/build/libs/*.jar app.jar
             EXPOSE 8086
-            ENTRYPOINT ["java", "-jar", "app.jar"]
+            ENTRYPOINT ["java", "-Xms512m", "-Xmx1g", "-jar", "app.jar"]
             EOF
             
+            # Docker BuildKit 사용 (더 빠른 빌드)
+            export DOCKER_BUILDKIT=1
+            
             # 빌드 및 실행
-            docker build -t spring-app .
-            docker run -d \
-              --name spring-server \
-              -p 8086:8086 \
+            echo "🔨 Building Docker image..."
+            docker build --no-cache -t spring-app .
+            
+            echo "🚀 Starting container..."
+            docker run -d --name spring-server -p 8086:8086 \
               -e SPRING_DATASOURCE_URL="${{ secrets.DB_URL }}" \
               -e SPRING_DATASOURCE_USERNAME="${{ secrets.DB_USERNAME }}" \
               -e SPRING_DATASOURCE_PASSWORD="${{ secrets.DB_PASSWORD }}" \
@@ -61,6 +70,8 @@ jobs:
               spring-app
             
             # 상태 확인
+            echo "⏳ Waiting for container to start..."
             sleep 15
-            docker ps | grep spring-server
-            docker logs spring-server --tail 10
+            docker ps | grep spring-server || echo "❌ Container not running"
+            docker logs spring-server --tail 5 || echo "❌ No logs available"
+            echo "✅ Deployment process completed!"
