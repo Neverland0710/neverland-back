@@ -22,7 +22,7 @@ jobs:
             rm -rf app
           
             # GitHub에서 코드 받아오기
-            git clone https://github.com/your-username/neverland.git app
+            git clone https://github.com/Neverland0710/neverland-back.git app
             cd app
           
             # Java 설치 확인 (Docker에서 빌드하므로 생략 가능)
