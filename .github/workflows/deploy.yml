@@ -29,18 +29,16 @@ jobs:
 
       - name: 📡 Deploy to EC2
         run: |
-          # 전체 프로젝트를 tar로 압축해서 한 번에 전송
-          tar -czf project.tar.gz --exclude='.git' --exclude='node_modules' .
+          # 필요한 파일들만 복사
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "rm -rf ~/app && mkdir -p ~/app"
           
-          scp -o StrictHostKeyChecking=no project.tar.gz ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/
+          # 개별 파일 복사
+          scp -o StrictHostKeyChecking=no ./build/libs/*.jar ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/app/app.jar
+          scp -o StrictHostKeyChecking=no ./Dockerfile ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/app/
+          scp -o StrictHostKeyChecking=no ./src ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/app/ -r || true
           
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            # 기존 app 폴더 정리하고 새로 압축 해제
-            rm -rf ~/app
-            mkdir -p ~/app
             cd ~/app
-            tar -xzf ~/project.tar.gz
-            rm ~/project.tar.gz
           
             # Docker 컨테이너 정리
             docker stop spring-server || true
