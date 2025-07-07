@@ -42,8 +42,36 @@ jobs:
       - name: 📡 Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e
+
+            mkdir -p ~/app
             cd ~/app
-            git pull origin main
-            docker-compose down
+
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/${{ github.repository }} .
+            else
+              git pull origin main
+            fi
+
+            echo "✅ .env 파일 생성"
+            cat <<EOL > .env
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_REGION=${{ secrets.AWS_REGION }}
+            S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
+
+            SERVER_PORT=8086
+            SPRING_PROFILES_ACTIVE=prod
+            EOL
+
+            echo "🛠️ Docker 빌드 및 재시작"
+            docker-compose down || true
             docker-compose up --build -d
           EOF
