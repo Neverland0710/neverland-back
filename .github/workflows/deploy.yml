@@ -8,6 +8,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: 📦 Checkout source
+        uses: actions/checkout@v3
+
       - name: 🗝️ Set up SSH
         uses: webfactory/ssh-agent@v0.8.0
         with:
@@ -15,26 +18,18 @@ jobs:
 
       - name: 📡 Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
             cd ~
           
             # 기존 폴더 정리
             rm -rf app
           
-            # GitHub에서 코드 받아오기
+            # GitHub에서 최신 코드 받아오기
             git clone https://github.com/Neverland0710/neverland-back.git app
             cd app
           
-            # Java 설치 확인 (Docker에서 빌드하므로 생략 가능)
-          
-            # Gradle 빌드 생략 - Docker에서 처리
-          
-            # Docker 컨테이너 정리
-            docker stop spring-server || true
-            docker rm spring-server || true
-          
-            # 환경변수 파일 생성
-            cat > .env << 'ENVEOF'
+            # 환경변수 파일 생성 (변수 치환 가능하도록 수정)
+            cat > .env << EOL
           AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION=${{ secrets.AWS_REGION }}
@@ -46,9 +41,9 @@ jobs:
           FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
           SERVER_PORT=8086
           SPRING_PROFILES_ACTIVE=prod
-          ENVEOF
+          EOL
           
-            # Docker Compose로 빌드 및 실행
+            # Docker Compose로 재시작
             docker-compose down || true
             docker-compose up --build -d
           
