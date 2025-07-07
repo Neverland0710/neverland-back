@@ -34,15 +34,15 @@ public class LetterService {
         String letterId = UUID.randomUUID().toString();
         LocalDateTime createdAt = dto.getCreatedAt() != null ? dto.getCreatedAt() : LocalDateTime.now();
 
-        // ✅ null 방어 처리
+        // null 방어 처리
         if (dto.getUserId() == null || dto.getAuthKeyId() == null) {
-            throw new IllegalArgumentException("❌ user_id 또는 auth_key_id가 누락되었습니다.");
+            throw new IllegalArgumentException("user_id 또는 auth_key_id가 누락되었습니다.");
         }
 
         AuthKey authKey = authKeyRepository.findById(dto.getAuthKeyId())
-                .orElseThrow(() -> new IllegalArgumentException("❌ 유효하지 않은 인증키 ID입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 인증키 ID입니다."));
 
-        // ✅ 편지 저장
+        // 편지 저장
         Letter letter = Letter.builder()
                 .letterId(letterId)
                 .authKey(authKey)
@@ -53,19 +53,19 @@ public class LetterService {
                 .build();
         letterRepository.save(letter);
 
-        // ✅ FastAPI로 보낼 JSON 생성
+        // FastAPI로 보낼 JSON 생성
         Map<String, Object> request = new HashMap<>();
         request.put("letter_id", letterId);
         request.put("user_id", dto.getUserId());
         request.put("authKeyId", dto.getAuthKeyId());
         request.put("letter_text", Optional.ofNullable(dto.getContent()).orElse(""));
 
-        // ✅ 디버깅용 로그 출력
+        // 디버깅용 로그 출력
         try {
             String jsonLog = new ObjectMapper().writeValueAsString(request);
-            System.out.println("📨 FastAPI로 전송할 JSON: " + jsonLog);
+            System.out.println("FastAPI로 전송할 JSON: " + jsonLog);
         } catch (Exception e) {
-            System.out.println("❌ JSON 변환 실패: " + e.getMessage());
+            System.out.println("JSON 변환 실패: " + e.getMessage());
         }
 
         return fastapiWebClient.post()
@@ -80,7 +80,7 @@ public class LetterService {
                     letter.setDeliveryStatus(Letter.DeliveryStatus.DELIVERED);
                     letterRepository.save(letter);
 
-                    // ✅ 통계 업데이트
+                    // 통계 업데이트
                     Statistics stat = statisticsRepository.findByUserId(dto.getUserId())
                             .orElseGet(() -> Statistics.builder()
                                     .userId(dto.getUserId())
@@ -95,14 +95,14 @@ public class LetterService {
                     return reply;
                 })
                 .doOnError(e -> {
-                    System.out.println("❌ FastAPI 통신 중 에러 발생: " + e.getMessage());
+                    System.out.println("FastAPI 통신 중 에러 발생: " + e.getMessage());
                 })
                 .then();
     }
 
     public List<Letter> getLettersByAuthKey(String authKeyId) {
         AuthKey authKey = authKeyRepository.findById(authKeyId)
-                .orElseThrow(() -> new IllegalArgumentException("❌ 유효하지 않은 인증키 ID입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 인증키 ID입니다."));
         return letterRepository.findByAuthKeyOrderByCreatedAtDesc(authKey);
     }
     public String getRelationByUserId(String userId) {

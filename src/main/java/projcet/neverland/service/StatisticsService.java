@@ -29,7 +29,7 @@ public class StatisticsService {
                 .orElseThrow(() -> new IllegalArgumentException("통계 정보 없음"));
     }
 
-    // ✅ DB 기준으로 유품 개수 다시 계산
+    // DB 기준으로 유품 개수 다시 계산
     public void recalculateKeepsakeCount(String userId) {
         List<String> authKeyIds = authKeyRepository.findByUserId(userId)
                 .stream().map(AuthKey::getAuthKeyId).toList();
@@ -44,7 +44,7 @@ public class StatisticsService {
         statisticsRepository.save(stat);
     }
 
-    // ✅ DB 기준으로 사진 개수 다시 계산
+    // DB 기준으로 사진 개수 다시 계산
     public void recalculatePhotoCount(String userId) {
         List<String> authKeyIds = authKeyRepository.findByUserId(userId)
                 .stream().map(AuthKey::getAuthKeyId).toList();
@@ -59,7 +59,7 @@ public class StatisticsService {
         statisticsRepository.save(stat);
     }
 
-    // ✅ 통계 초기화용
+    // 통계 초기화용
     private Statistics initializeStatistics(String userId) {
         Statistics newStat = Statistics.builder()
                 .statId(UUID.randomUUID().toString())

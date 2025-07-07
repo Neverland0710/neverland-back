@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface PhotoAlbumRepository extends JpaRepository<PhotoAlbum, String> {
     List<PhotoAlbum> findByAuthKeyId(String authKeyId);
+    Optional<PhotoAlbum> findByImagePath(String imagePath);
 
     int countByAuthKeyIdIn(List<String> authKeyIds);
 

@@ -29,12 +29,12 @@ public class AudioWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
-        log.info("✅ WebSocket 연결 완료: {}", session.getId());
+        log.info("WebSocket 연결 완료: {}", session.getId());
     }
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) {
-        log.info("📩 handleTextMessage() 호출됨 - session: {}, payload: {}", session.getId(), message.getPayload());
+        log.info("handleTextMessage() 호출됨 - session: {}, payload: {}", session.getId(), message.getPayload());
 
         try {
             JsonNode json = objectMapper.readTree(message.getPayload());
@@ -45,28 +45,28 @@ public class AudioWebSocketHandler extends TextWebSocketHandler {
                     String authKeyIdFromPayload = json.path("authKeyId").asText();
                     if (authKeyIdFromPayload != null && !authKeyIdFromPayload.isEmpty()) {
                         session.getAttributes().put("authKeyId", authKeyIdFromPayload);
-                        log.info("✅ 인증 성공 - authKeyId: {}", authKeyIdFromPayload);
+                        log.info("인증 성공 - authKeyId: {}", authKeyIdFromPayload);
                     } else {
-                        log.warn("❌ auth 메시지에 authKeyId 없음");
+                        log.warn("auth 메시지에 authKeyId 없음");
                     }
                     break;
 
                 case "connect":
-                    log.info("🔗 연결 초기화 메시지 수신");
+                    log.info("연결 초기화 메시지 수신");
                     break;
 
                 case "ping":
-                    log.info("📡 ping 수신");
+                    log.info("ping 수신");
                     break;
 
                 case "transcription":
                 case "user_message":
                     String userText = json.path("text").asText();
-                    log.info("📝 수신된 텍스트: {}", userText);
+                    log.info("수신된 텍스트: {}", userText);
 
                     String authKeyId = (String) session.getAttributes().get("authKeyId");
                     if (authKeyId == null || authKeyId.isEmpty()) {
-                        log.error("❌ 인증되지 않은 세션입니다. authKeyId 없음. 연결 종료");
+                        log.error("인증되지 않은 세션입니다. authKeyId 없음. 연결 종료");
                         session.close();
                         return;
                     }
@@ -75,17 +75,17 @@ public class AudioWebSocketHandler extends TextWebSocketHandler {
                     break;
 
                 default:
-                    log.warn("❓ 알 수 없는 메시지 타입: {}", type);
+                    log.warn("알 수 없는 메시지 타입: {}", type);
             }
 
         } catch (Exception e) {
-            log.error("❌ JSON 파싱 에러", e);
+            log.error("JSON 파싱 에러", e);
         }
     }
 
     private void callVoiceProcessEndpoint(WebSocketSession session, String authKeyId, String userText) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("authKeyId", authKeyId);  // ✅ FastAPI가 요구하는 대소문자 정확히 일치
+        formData.add("authKeyId", authKeyId);  // FastAPI가 요구하는 대소문자 정확히 일치
         formData.add("user_text", userText);
 
         fastapiWebClient.post()
@@ -104,7 +104,7 @@ public class AudioWebSocketHandler extends TextWebSocketHandler {
                                         buffer.read(bytes);
                                         out.write(bytes);
                                     } catch (IOException e) {
-                                        log.error("❌ Byte 쓰기 실패", e);
+                                        log.error("Byte 쓰기 실패", e);
                                     } finally {
                                         org.springframework.core.io.buffer.DataBufferUtils.release(buffer);
                                     }
@@ -117,25 +117,25 @@ public class AudioWebSocketHandler extends TextWebSocketHandler {
                                 if (encodedText != null) {
                                     String decodedText = URLDecoder.decode(encodedText, StandardCharsets.UTF_8);
                                     session.sendMessage(new TextMessage(decodedText));
-                                    log.info("📨 텍스트 응답 전송: {}", decodedText);
+                                    log.info("텍스트 응답 전송: {}", decodedText);
                                 }
 
                                 session.sendMessage(new BinaryMessage(audioBytes));
-                                log.info("📤 오디오 전송: {} bytes", audioBytes.length);
+                                log.info("오디오 전송: {} bytes", audioBytes.length);
 
                             } catch (IOException e) {
-                                log.error("❌ WebSocket 전송 실패", e);
+                                log.error("WebSocket 전송 실패", e);
                             }
 
                             return Mono.empty();
                         });
 
                     } else {
-                        log.error("🔥 FastAPI 응답 실패: {}", response.statusCode());
+                        log.error("FastAPI 응답 실패: {}", response.statusCode());
                         return Mono.empty();
                     }
                 })
-                .doOnError(error -> log.error("❌ FastAPI 통신 에러", error))
+                .doOnError(error -> log.error("FastAPI 통신 에러", error))
                 .subscribe();
     }
 
