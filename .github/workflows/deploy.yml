@@ -8,20 +8,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: 📦 Checkout source
-        uses: actions/checkout@v3
-
-      - name: ☕ Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: 🔨 Build with Gradle
-        run: |
-          chmod +x ./gradlew
-          ./gradlew clean build -x test
-
       - name: 🗝️ Set up SSH
         uses: webfactory/ssh-agent@v0.8.0
         with:
@@ -29,25 +15,40 @@ jobs:
 
       - name: 📡 Deploy to EC2
         run: |
-          # 필요한 파일들만 복사
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "rm -rf ~/app && mkdir -p ~/app"
-          
-          # 개별 파일 복사
-          scp -o StrictHostKeyChecking=no ./build/libs/*.jar ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/app/app.jar
-          scp -o StrictHostKeyChecking=no ./Dockerfile ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/app/
-          scp -o StrictHostKeyChecking=no ./src ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/app/ -r || true
-          
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd ~/app
+            cd ~
+          
+            # 기존 폴더 정리
+            rm -rf app
+          
+            # GitHub에서 코드 받아오기
+            git clone https://github.com/Neverland0710/neverland-back.git app
+            cd app
+          
+            # Java 17 설치 (만약 없다면)
+            sudo apt update
+            sudo apt install -y openjdk-17-jdk
+          
+            # Gradle 빌드
+            chmod +x ./gradlew
+            ./gradlew clean build -x test
           
             # Docker 컨테이너 정리
             docker stop spring-server || true
             docker rm spring-server || true
           
-            # Docker 이미지 빌드
+            # Dockerfile 생성 (JAR 파일 경로 맞춤)
+            cat > Dockerfile << 'DOCKEREOF'
+          FROM openjdk:17-jdk-slim
+          WORKDIR /app
+          COPY build/libs/*.jar app.jar
+          EXPOSE 8086
+          ENTRYPOINT ["java", "-jar", "app.jar"]
+          DOCKEREOF
+          
+            # Docker 빌드 및 실행
             docker build -t spring-app .
           
-            # Docker 컨테이너 실행
             docker run -d \
               --name spring-server \
               -p 8086:8086 \
