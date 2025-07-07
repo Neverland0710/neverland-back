@@ -1,4 +1,4 @@
-name: 🚀 Fast Deploy Spring Boot to EC2
+name: 🚀 Simple Fast Deploy
 
 on:
   push:
@@ -6,36 +6,10 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: 📦 Checkout source
-        uses: actions/checkout@v3
-
-      - name: ☕ Setup JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: 🚀 Setup Gradle
-        uses: gradle/gradle-build-action@v2
-
-      - name: 🔨 Build with Gradle
-        run: |
-          chmod +x ./gradlew
-          ./gradlew build -x test --parallel --build-cache
-
-      - name: 📂 Upload JAR to EC2
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "build/libs/*.jar"
-          target: "/home/ubuntu/app/"
-
-      - name: 🔐 Deploy on EC2
+      - name: 🔐 Connect to EC2 & Deploy Spring
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -45,19 +19,28 @@ jobs:
             cd ~/app
             
             # 기존 컨테이너 정리
-            docker stop spring-server || true
-            docker rm spring-server || true
+            docker rm -f spring-server || true
+            
+            # 최신 소스 받기
+            rm -rf neverland-back
+            git clone https://github.com/Neverland0710/neverland-back.git
+            cd neverland-back
             
             # 간단한 Dockerfile 생성
             cat > Dockerfile << 'EOF'
+            FROM gradle:8.5.0-jdk17 AS builder
+            WORKDIR /app
+            COPY . .
+            RUN gradle build -x test --no-daemon --parallel
+            
             FROM openjdk:17-jdk-slim
             WORKDIR /app
-            COPY build/libs/*.jar app.jar
+            COPY --from=builder /app/build/libs/*.jar app.jar
             EXPOSE 8086
             ENTRYPOINT ["java", "-jar", "app.jar"]
             EOF
             
-            # 빠른 빌드 및 실행
+            # 빌드 및 실행
             docker build -t spring-app .
             docker run -d \
               --name spring-server \
@@ -78,6 +61,6 @@ jobs:
               spring-app
             
             # 상태 확인
-            sleep 10
-            docker ps
-            docker logs spring-server --tail 20
+            sleep 15
+            docker ps | grep spring-server
+            docker logs spring-server --tail 10
