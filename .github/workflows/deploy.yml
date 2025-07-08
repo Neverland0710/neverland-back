@@ -30,6 +30,21 @@ jobs:
             rm -rf spring-server
             git clone https://github.com/Neverland0710/neverland-back.git spring-server
             
+            # 🔑 환경변수 파일 생성 (.env)
+            cat > .env << 'ENV_EOF'
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_REGION=${{ secrets.AWS_REGION }}
+            S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+            SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}
+            SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}
+            SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
+            SERVER_PORT=8086
+            SPRING_PROFILES_ACTIVE=prod
+            ENV_EOF
+            
             # 📄 application.properties 생성 (환경변수 방식)
             mkdir -p spring-server/src/main/resources
             cat > spring-server/src/main/resources/application.properties << 'PROPS_EOF'
@@ -80,28 +95,20 @@ jobs:
             management.endpoint.health.show-details=always
             PROPS_EOF
             
-            # 📄 docker-compose.yml 생성 (완벽한 환경변수)
+            # 📄 Firebase Admin SDK 파일 생성 (GitHub Secrets 사용)
+            mkdir -p spring-server/src/main/resources
+            echo '${{ secrets.FIREBASE_CONFIG_JSON }}' > spring-server/src/main/resources/firebase_adminsdk.json
+            
+            # 📄 docker-compose.yml 생성 (환경변수 파일 사용)
             cat > docker-compose.yml << 'YAML_EOF'
-            version: '3.8'
             services:
               spring-server:
                 build:
                   context: ./spring-server
                 ports:
                   - "8086:8086"
-                environment:
-                  - "SPRING_PROFILES_ACTIVE=prod"
-                  - "SPRING_DATASOURCE_URL=${{ secrets.DB_URL }}"
-                  - "SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }}"
-                  - "SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}"
-                  - "SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver"
-                  - "SERVER_PORT=8086"
-                  - "JWT_SECRET=${{ secrets.JWT_SECRET }}"
-                  - "JWT_EXPIRATION=3600000"
-                  - "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}"
-                  - "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-                  - "AWS_REGION=${{ secrets.AWS_REGION }}"
-                  - "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}"
+                env_file:
+                  - .env
                 container_name: spring-server
                 restart: always
                 healthcheck:
