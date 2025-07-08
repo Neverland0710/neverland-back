@@ -4,19 +4,13 @@ services:
       context: ./spring-server
     ports:
       - "8086:8086"
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://project-db-campus.smhrd.com:3307/hyeon7897
-      - SPRING_DATASOURCE_USERNAME=hyeon7897
-      - SPRING_DATASOURCE_PASSWORD=123456789
-      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
-      - JWT_SECRET=${JWT_SECRET}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
-      - AWS_REGION=${AWS_REGION}
-      - SERVER_PORT=8086
-      - SPRING_PROFILES_ACTIVE=prod
     env_file:
-      - ./spring-server/.env
+      - .env
     container_name: spring-server
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8086/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

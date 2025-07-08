@@ -24,41 +24,41 @@ repositories {
 }
 
 dependencies {
-	// JPA
+	// ✅ Spring Boot Starters
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-
-	// WEB
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
-	// MySql
+	// ✅ Database
 	runtimeOnly 'com.mysql:mysql-connector-j'
 
-	// lombok
-	annotationProcessor 'org.projectlombok:lombok'
+	// ✅ Lombok
 	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
 
-	// test
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-	// Swagger
+	// ✅ Swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
-	// JWT(json web token)
-	implementation 'io.jsonwebtoken:jjwt:0.9.1'
-	implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
-	implementation 'org.glassfish.jaxb:jaxb-runtime:3.0.2'
-	implementation 'javax.xml.bind:jaxb-api:2.3.0'
-	implementation 'com.google.firebase:firebase-admin:9.2.0'
+
+	// ✅ JWT (0.11.5 버전, 최신 방식)
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
-	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5' // Jackson 사용 시 필요
 
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	// ✅ Firebase Admin SDK
+	implementation 'com.google.firebase:firebase-admin:9.2.0'
 
-	implementation 'org.springframework.boot:spring-boot-starter-websocket'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
+	// ✅ JAXB (JWT 관련 바인딩 문제 해결용)
+	implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
+	implementation 'org.glassfish.jaxb:jaxb-runtime:3.0.2'
+
+	// ✅ AWS S3
 	implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
+
+	// ✅ 테스트
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
