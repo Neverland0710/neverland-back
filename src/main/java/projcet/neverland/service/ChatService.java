@@ -1,6 +1,8 @@
 package projcet.neverland.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -21,7 +23,6 @@ public class ChatService {
     private final UserRepository userRepository;
     private final TextConversationRepository textConversationRepository;
 
-    // FastAPI 챗 요청
     public Mono<Map> sendChatRequest(String authKeyId, String userId, String userInput) {
         Map<String, Object> requestBody = Map.of(
                 "authKeyId", authKeyId,
@@ -37,19 +38,15 @@ public class ChatService {
                 .bodyToMono(Map.class);
     }
 
-    // 유저 ID로 고인과의 관계 조회
     public String getRelationByUserId(String userId) {
         return userRepository.findRelationToDeceased(userId);
     }
 
-    // 대화 기록 조회 (Entity 버전 - 내부용)
-    public List<TextConversation> getChatHistory(String authKeyId) {
-        return textConversationRepository.findByAuthKeyIdOrderBySentAtAsc(authKeyId);
-    }
-
-    // 대화 기록 DTO 버전 (Flutter 응답용)
-    public List<ChatMessageDto> getChatHistoryAsDto(String authKeyId) {
-        return textConversationRepository.findByAuthKeyIdOrderBySentAtAsc(authKeyId)
+    // Pagination 적용된 대화 기록 조회
+    public List<ChatMessageDto> getChatHistoryAsDto(String authKeyId, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "sentAt"));
+        return textConversationRepository.findByAuthKeyIdOrderBySentAtDesc(authKeyId, pageable)
+                .getContent()
                 .stream()
                 .map(conv -> ChatMessageDto.builder()
                         .sender(conv.getSender().toString())
