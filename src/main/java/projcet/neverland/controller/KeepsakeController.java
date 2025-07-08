@@ -118,25 +118,36 @@ public class KeepsakeController {
     }
 
     @DeleteMapping("/delete")
-    @Operation(summary = "🗑️ 유품 삭제", description = "imageUrl 기준으로 S3, DB, 벡터DB에서 유품 정보 삭제")
+    @Operation(
+            summary = "🗑️ 유품 삭제",
+            description = "authKeyId와 imageUrl을 쿼리 파라미터로 받아, S3, DB, 벡터DB에서 유품 정보 삭제합니다.\n\n" +
+                    "예시: /keepsake/delete?authKeyId=xxx&imageUrl=https://s3.../image.jpg"
+    )
     public ResponseEntity<?> deleteKeepsake(
             @RequestParam("authKeyId") String authKeyId,
             @RequestParam("imageUrl") String imageUrl
     ) {
         try {
+            if (authKeyId == null || authKeyId.isBlank() || imageUrl == null || imageUrl.isBlank()) {
+                return ResponseEntity.badRequest().body("authKeyId와 imageUrl은 필수입니다.");
+            }
+
             Optional<Keepsake> keepsakeOpt = keepsakeRepository.findByAuthKeyIdAndImagePath(authKeyId, imageUrl);
             if (keepsakeOpt.isEmpty()) {
-                return ResponseEntity.status(404).body("유품을 찾을 수 없습니다.");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("유품을 찾을 수 없습니다.");
             }
 
             Keepsake keepsake = keepsakeOpt.get();
 
+            // S3 이미지 삭제
             if (keepsake.getImagePath() != null) {
                 s3Service.deleteFile(keepsake.getImagePath());
             }
 
+            // DB 삭제
             keepsakeRepository.delete(keepsake);
 
+            // 통계, 벡터DB 연동
             authKeyRepository.findByAuthKeyId(authKeyId).ifPresent(authKey -> {
                 String userId = authKey.getUserId();
                 statisticsService.recalculateKeepsakeCount(userId);
@@ -147,7 +158,7 @@ public class KeepsakeController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("삭제 실패: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("삭제 실패: " + e.getMessage());
         }
     }
 }
