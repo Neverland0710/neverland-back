@@ -29,7 +29,6 @@ jobs:
             rm -rf spring-server
             git clone https://github.com/Neverland0710/neverland-back.git spring-server
 
-            # ✅ .env 생성 (docker-compose에서 참조)
             cat > .env << 'ENV_EOF'
             DB_URL=jdbc:mysql://project-db-campus.smhrd.com:3307/hyeon7897
             DB_USERNAME=hyeon7897
@@ -41,8 +40,12 @@ jobs:
             S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
             SERVER_PORT=8086
             SPRING_PROFILES_ACTIVE=prod
-            FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
+            FIREBASE_CONFIG_JSON=classpath:firebase_adminsdk.json
             ENV_EOF
+
+            # ✅ Firebase Admin SDK JSON 파일 생성
+            mkdir -p spring-server/src/main/resources
+            echo '${{ secrets.FIREBASE_CONFIG_JSON }}' > spring-server/src/main/resources/firebase_adminsdk.json
 
             # ✅ Firebase Admin SDK JSON 파일 생성
             mkdir -p spring-server/src/main/resources
