@@ -19,36 +19,38 @@ public class S3Service {
 
     private final AmazonS3 amazonS3;
 
-    // ✅ 폴더명 없는 기본 업로드
+    /**
+     * ✅ 폴더 없는 기본 업로드
+     */
     public String uploadFile(MultipartFile file) {
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        try {
-            amazonS3.putObject(new PutObjectRequest(bucketName, fileName, file.getInputStream(), null)
-                    .withCannedAcl(CannedAccessControlList.PublicRead));
-            return amazonS3.getUrl(bucketName, fileName).toString();
-        } catch (Exception e) {
-            throw new RuntimeException("파일 업로드 실패", e);
-        }
+        return uploadFile(file, null);
     }
 
-    // ✅ 폴더명 지정 가능한 업로드
+    /**
+     * ✅ 폴더명 지정 업로드 (e.g., photos/)
+     */
     public String uploadFile(MultipartFile file, String folderName) {
-        String fileName = folderName + "/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
         try {
-            amazonS3.putObject(new PutObjectRequest(bucketName, fileName, file.getInputStream(), null)
+            String originalName = file.getOriginalFilename();
+            String uniqueName = UUID.randomUUID() + "_" + (originalName != null ? originalName : "unnamed");
+            String key = (folderName != null && !folderName.isEmpty()) ? folderName + "/" + uniqueName : uniqueName;
+
+            amazonS3.putObject(new PutObjectRequest(bucketName, key, file.getInputStream(), null)
                     .withCannedAcl(CannedAccessControlList.PublicRead));
-            return amazonS3.getUrl(bucketName, fileName).toString();
+
+            return amazonS3.getUrl(bucketName, key).toString(); // ✅ S3 전체 URL 반환
         } catch (Exception e) {
             throw new RuntimeException("파일 업로드 실패", e);
         }
     }
 
-    // ✅ URL 전체에서 S3 키 추출 후 삭제
+    /**
+     * 🗑️ 전체 S3 URL에서 key만 추출해 삭제
+     */
     public void deleteFile(String imageUrl) {
         try {
-            // URL에서 key 부분 추출
-            String baseUrl = amazonS3.getUrl(bucketName, "").toString(); // ex: https://bucket-name.s3.../
-            String key = imageUrl.replace(baseUrl, "");
+            String bucketUrl = amazonS3.getUrl(bucketName, "").toString(); // https://bucket.s3.amazonaws.com/
+            String key = imageUrl.replace(bucketUrl, "");
 
             amazonS3.deleteObject(bucketName, key);
         } catch (Exception e) {
