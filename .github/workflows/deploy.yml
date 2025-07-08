@@ -29,10 +29,11 @@ jobs:
             rm -rf spring-server
             git clone https://github.com/Neverland0710/neverland-back.git spring-server
 
+            # ✅ .env 생성
             cat > .env << 'ENV_EOF'
-            DB_URL=jdbc:mysql://project-db-campus.smhrd.com:3307/hyeon7897
-            DB_USERNAME=hyeon7897
-            DB_PASSWORD=123456789
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -43,13 +44,9 @@ jobs:
             FIREBASE_CONFIG_JSON=classpath:firebase_adminsdk.json
             ENV_EOF
 
-            # ✅ Firebase Admin SDK JSON 파일 생성
+            # ✅ Firebase Admin SDK JSON 파일 복원
             mkdir -p spring-server/src/main/resources
-            echo '${{ secrets.FIREBASE_CONFIG_JSON }}' > spring-server/src/main/resources/firebase_adminsdk.json
-
-            # ✅ Firebase Admin SDK JSON 파일 생성
-            mkdir -p spring-server/src/main/resources
-            echo '${{ secrets.FIREBASE_CONFIG_JSON }}' > spring-server/src/main/resources/firebase_adminsdk.json
+            echo "${{ secrets.FIREBASE_CONFIG_JSON_BASE64 }}" | base64 -d > spring-server/src/main/resources/firebase_adminsdk.json
 
             # 🐳 Docker Compose 실행
             echo "🔨 Building application..."
