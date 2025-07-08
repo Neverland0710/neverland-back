@@ -43,7 +43,16 @@ public class S3Service {
         }
     }
 
-    public void deleteFile(String fileName) {
-        amazonS3.deleteObject(bucketName, fileName);
+    // ✅ URL 전체에서 S3 키 추출 후 삭제
+    public void deleteFile(String imageUrl) {
+        try {
+            // URL에서 key 부분 추출
+            String baseUrl = amazonS3.getUrl(bucketName, "").toString(); // ex: https://bucket-name.s3.../
+            String key = imageUrl.replace(baseUrl, "");
+
+            amazonS3.deleteObject(bucketName, key);
+        } catch (Exception e) {
+            throw new RuntimeException("파일 삭제 실패", e);
+        }
     }
 }
