@@ -46,8 +46,16 @@ public class PhotoController {
             @RequestPart("file") MultipartFile file
     ) {
         try {
+            System.out.println("✅ 업로드 요청 도착");
+            System.out.println("authKeyId: " + authKeyId);
+            System.out.println("title: " + title);
+            System.out.println("description: " + description);
+            System.out.println("photo_date: " + photoDate);
+            System.out.println("file: " + file.getOriginalFilename());
+
             // S3에 파일 업로드
             String imageUrl = s3Service.uploadFile(file, "photos");
+            System.out.println("✅ S3 업로드 URL: " + imageUrl);
 
             if (imageUrl == null) {
                 return ResponseEntity.status(500).body("파일 업로드 실패");
@@ -65,7 +73,10 @@ public class PhotoController {
                     .uploadedAt(LocalDateTime.now())
                     .build();
 
+            System.out.println("✅ DB 저장 전 photo 객체: " + photo);
+
             photoAlbumRepository.save(photo);
+            System.out.println("✅ DB 저장 완료");
 
             authKeyRepository.findByAuthKeyId(authKeyId).ifPresent(authKey ->
                     statisticsService.recalculatePhotoCount(authKey.getUserId()));
@@ -78,48 +89,8 @@ public class PhotoController {
             ));
 
         } catch (Exception e) {
+            e.printStackTrace(); // ✅ 콘솔에 예외 로그 출력
             return ResponseEntity.status(500).body("업로드 실패: " + e.getMessage());
         }
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "🗑️ 사진 삭제", description = "이미지 경로를 기준으로 DB, S3 파일, 벡터DB에서 삭제합니다.")
-    public ResponseEntity<?> deletePhoto(@RequestParam("imageUrl") String imageUrl) {
-        try {
-            // S3 URL에서 파일명 추출
-            String filename = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-
-            // DB에서 사진 찾기 (기존 메서드 사용)
-            Optional<PhotoAlbum> target = photoAlbumRepository.findByImagePathContaining(filename);
-
-            if (target.isPresent()) {
-                PhotoAlbum photo = target.get();
-
-                // S3에서 파일 삭제
-                s3Service.deleteFile(imageUrl);
-
-                // DB에서 삭제
-                photoAlbumRepository.delete(photo);
-
-                authKeyRepository.findByAuthKeyId(photo.getAuthKeyId()).ifPresent(authKey -> {
-                    String userId = authKey.getUserId();
-                    vectorSyncService.deleteMemory(photo.getPhotoId(), "photo", userId).subscribe();
-                    statisticsService.recalculatePhotoCount(userId);
-                });
-
-                return ResponseEntity.ok("삭제 완료");
-            } else {
-                return ResponseEntity.status(404).body("해당 사진 없음");
-            }
-
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("삭제 중 오류 발생: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/list")
-    @Operation(summary = "📄 사진 목록 조회", description = "authKeyId 기준으로 업로드된 사진 목록을 반환합니다.")
-    public ResponseEntity<List<PhotoAlbum>> getPhotoList(@RequestParam("authKeyId") String authKeyId) {
-        return ResponseEntity.ok(photoAlbumRepository.findByAuthKeyId(authKeyId));
     }
 }
