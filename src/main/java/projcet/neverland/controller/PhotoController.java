@@ -18,10 +18,7 @@ import projcet.neverland.service.VectorSyncService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -53,7 +50,7 @@ public class PhotoController {
             System.out.println("photo_date: " + photoDate);
             System.out.println("file: " + file.getOriginalFilename());
 
-            // S3에 파일 업로드
+            // S3 업로드
             String imageUrl = s3Service.uploadFile(file, "photos");
             System.out.println("✅ S3 업로드 URL: " + imageUrl);
 
@@ -89,8 +86,16 @@ public class PhotoController {
             ));
 
         } catch (Exception e) {
-            e.printStackTrace(); // ✅ 콘솔에 예외 로그 출력
+            e.printStackTrace();
             return ResponseEntity.status(500).body("업로드 실패: " + e.getMessage());
         }
+    }
+
+    // ✅ 목록 조회 API 추가
+    @GetMapping("/list")
+    @Operation(summary = "📄 사진 목록 조회", description = "authKeyId 기준으로 업로드된 사진 목록을 반환합니다.")
+    public ResponseEntity<List<PhotoAlbum>> getPhotoList(@RequestParam("authKeyId") String authKeyId) {
+        List<PhotoAlbum> photoList = photoAlbumRepository.findByAuthKeyId(authKeyId);
+        return ResponseEntity.ok(photoList);
     }
 }
