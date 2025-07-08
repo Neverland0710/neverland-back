@@ -11,6 +11,7 @@ public interface PhotoAlbumRepository extends JpaRepository<PhotoAlbum, String> 
     Optional<PhotoAlbum> findByImagePath(String imagePath);
 
     int countByAuthKeyIdIn(List<String> authKeyIds);
+    Optional<PhotoAlbum> findByAuthKeyIdAndImagePath(String authKeyId, String imagePath);
 
     Optional<PhotoAlbum> findByImagePathContaining(String filename);
 }

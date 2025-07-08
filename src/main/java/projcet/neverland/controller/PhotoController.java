@@ -98,4 +98,41 @@ public class PhotoController {
         List<PhotoAlbum> photoList = photoAlbumRepository.findByAuthKeyId(authKeyId);
         return ResponseEntity.ok(photoList);
     }
+    @DeleteMapping("/delete")
+    @Operation(summary = "🗑️ 사진 삭제", description = "imageUrl 기준으로 S3에서 파일을 삭제하고 DB 및 벡터DB에서도 제거합니다.")
+    public ResponseEntity<?> deletePhoto(
+            @RequestParam("authKeyId") String authKeyId,
+            @RequestParam("imageUrl") String imageUrl
+    ) {
+        try {
+            // 📌 1. DB에서 해당 사진 찾기
+            Optional<PhotoAlbum> optionalPhoto = photoAlbumRepository.findByAuthKeyIdAndImagePath(authKeyId, imageUrl);
+            if (optionalPhoto.isEmpty()) {
+                return ResponseEntity.status(404).body("사진을 찾을 수 없습니다.");
+            }
+
+            PhotoAlbum photo = optionalPhoto.get();
+
+            // 📌 2. S3에서 파일 삭제
+            s3Service.deleteFile(imageUrl);
+
+            // 📌 3. DB에서 삭제
+            photoAlbumRepository.delete(photo);
+
+            // 📌 4. 통계 갱신
+            authKeyRepository.findByAuthKeyId(authKeyId).ifPresent(authKey ->
+                    statisticsService.recalculatePhotoCount(authKey.getUserId()));
+
+            // 📌 5. FastAPI 벡터에서 삭제
+            authKeyRepository.findByAuthKeyId(authKeyId).ifPresent(authKey ->
+                    vectorSyncService.deleteMemory(photo.getPhotoId(), "photo", authKey.getUserId()).subscribe()
+            );
+
+            return ResponseEntity.ok("삭제 완료");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("삭제 실패: " + e.getMessage());
+        }
+    }
+
 }
