@@ -51,7 +51,7 @@ public class ChatService {
 
     // Pagination 적용된 대화 기록 조회
     public List<ChatMessageDto> getChatHistoryAsDto(String authKeyId, int page, int size) {
-        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "sentAt"));
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "sentAt"));
         return textConversationRepository.findByAuthKeyIdOrderBySentAtDesc(authKeyId, pageable)
                 .getContent()
                 .stream()
