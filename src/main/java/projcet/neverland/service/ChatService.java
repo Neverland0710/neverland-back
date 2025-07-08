@@ -25,7 +25,7 @@ public class ChatService {
 
     public Mono<Map> sendChatRequest(String authKeyId, String userId, String userInput) {
         Map<String, Object> requestBody = Map.of(
-                "authKeyId", authKeyId,
+                "authKeyId", authKeyId,       // ✅ 카멜케이스 그대로 유지
                 "user_id", userId,
                 "user_input", userInput
         );
@@ -35,6 +35,13 @@ public class ChatService {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(requestBody)
                 .retrieve()
+                .onStatus(
+                        status -> status.is5xxServerError(),
+                        clientResponse -> clientResponse.bodyToMono(String.class).flatMap(error -> {
+                            System.err.println("🔥 FastAPI 500 에러 내용: " + error);
+                            return Mono.error(new RuntimeException("FastAPI Internal Error: " + error));
+                        })
+                )
                 .bodyToMono(Map.class);
     }
 
