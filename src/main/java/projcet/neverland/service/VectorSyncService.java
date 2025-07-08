@@ -20,10 +20,10 @@ public class VectorSyncService {
         MemoryDeleteRequestDto dto = new MemoryDeleteRequestDto(itemId, itemType, userId);
 
         return fastapiWebClient
-                .method(HttpMethod.DELETE)
+                .method(HttpMethod.POST)  // ← 여기!!
                 .uri("/api/admin/memory/delete")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(dto) // 이제 DTO 사용
+                .bodyValue(dto)
                 .retrieve()
                 .bodyToMono(Void.class);
     }
