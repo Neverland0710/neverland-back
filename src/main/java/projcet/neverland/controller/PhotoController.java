@@ -43,7 +43,7 @@ public class PhotoController {
             @RequestParam("title") String title,
             @RequestParam("description") String description,
             @RequestParam("photo_date") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate photoDate,
-            @RequestPart("file") MultipartFile file
+            @RequestParam("file") MultipartFile file
     ) {
         try {
             System.out.println("✅ 업로드 요청 도착");
