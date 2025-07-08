@@ -31,7 +31,7 @@ public class PhotoAlbum {
     @Column(name = "photo_date")
     private LocalDate photoDate;
 
-    @Column(name = "image_path")
+    @Column(name = "image_path", columnDefinition = "TEXT")
     private String imagePath;
 
     @Column(name = "file_format")
