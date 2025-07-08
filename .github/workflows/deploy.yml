@@ -1,3 +1,4 @@
+# .github/workflows/deploy.yml
 name: 🚀 Deploy to EC2 with Docker Compose
 
 on:
@@ -29,29 +30,59 @@ jobs:
             rm -rf spring-server
             git clone https://github.com/Neverland0710/neverland-back.git spring-server
             
-            # 📄 .env 파일 생성 (properties 기준으로 맞춤)
-            cat > spring-server/.env << 'EOF'
-            # 데이터베이스 설정
-            DB_URL=${{ secrets.DB_URL }}
-            DB_USERNAME=${{ secrets.DB_USERNAME }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            # 📄 application.properties 생성 (환경변수 방식)
+            mkdir -p spring-server/src/main/resources
+            cat > spring-server/src/main/resources/application.properties << 'PROPS_EOF'
+            # ✅ DB 설정 (환경변수에서 읽음)
+            spring.datasource.url=${SPRING_DATASOURCE_URL}
+            spring.datasource.username=${SPRING_DATASOURCE_USERNAME}
+            spring.datasource.password=${SPRING_DATASOURCE_PASSWORD}
+            spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+            # ✅ JPA 설정
+            spring.jpa.hibernate.ddl-auto=update
+            spring.jpa.show-sql=false
+            spring.jpa.properties.hibernate.format_sql=true
+            spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect
+            spring.jpa.hibernate.naming.physical-strategy=org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
+            # ✅ 정적 리소스 및 파일 업로드 설정
+            spring.web.resources.static-locations=classpath:/static/images/
+            spring.servlet.multipart.max-file-size=20MB
+            spring.servlet.multipart.max-request-size=20MB
+            spring.datasource.hikari.max-lifetime=1800000
+            spring.datasource.hikari.idle-timeout=600000
+
+            # ✅ 포트 설정
+            server.port=${SERVER_PORT:8086}
+            server.address=0.0.0.0
+
+            # ✅ JWT 설정 (환경변수 사용)
+            jwt.secret=${JWT_SECRET}
+            jwt.expiration=${JWT_EXPIRATION:3600000}
+
+            # ✅ AWS S3 설정
+            cloud.aws.credentials.access-key=${AWS_ACCESS_KEY_ID}
+            cloud.aws.credentials.secret-key=${AWS_SECRET_ACCESS_KEY}
+            cloud.aws.region.static=${AWS_REGION}
+            cloud.aws.s3.bucket=${S3_BUCKET_NAME}
+            cloud.aws.stack.auto=false
+
+            # ✅ Firebase 설정
+            firebase.config-json=classpath:firebase_adminsdk.json
+
+            # ✅ 로깅
+            logging.level.root=INFO
+            logging.level.projcet.neverland=DEBUG
+
+            # ✅ Management 엔드포인트
+            management.endpoints.web.exposure.include=health,info
+            management.endpoint.health.show-details=always
+            PROPS_EOF
             
-            # JWT 설정
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            JWT_EXPIRATION=3600000
-            
-            # AWS S3 설정
-            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_REGION=${{ secrets.AWS_REGION }}
-            S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
-            
-            # Firebase 설정
-            FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}
-            EOF
-            
-            # 📄 docker-compose.yml 생성 (YAML 안전하게 처리)
+            # 📄 docker-compose.yml 생성 (완벽한 환경변수)
             cat > docker-compose.yml << 'YAML_EOF'
+            version: '3.8'
             services:
               spring-server:
                 build:
@@ -59,18 +90,18 @@ jobs:
                 ports:
                   - "8086:8086"
                 environment:
-                  - "DB_URL=${{ secrets.DB_URL }}"
-                  - "DB_USERNAME=${{ secrets.DB_USERNAME }}"
-                  - "DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
+                  - "SPRING_PROFILES_ACTIVE=prod"
+                  - "SPRING_DATASOURCE_URL=${{ secrets.DB_URL }}"
+                  - "SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }}"
+                  - "SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}"
+                  - "SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver"
+                  - "SERVER_PORT=8086"
                   - "JWT_SECRET=${{ secrets.JWT_SECRET }}"
                   - "JWT_EXPIRATION=3600000"
                   - "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}"
                   - "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
                   - "AWS_REGION=${{ secrets.AWS_REGION }}"
                   - "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}"
-                  - "FIREBASE_CONFIG_JSON=${{ secrets.FIREBASE_CONFIG_JSON }}"
-                env_file:
-                  - ./spring-server/.env
                 container_name: spring-server
                 restart: always
                 healthcheck:

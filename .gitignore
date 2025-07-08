@@ -35,7 +35,7 @@ out/
 
 ### 기존 민감한 파일들 ###
 src/main/resources/firebase_adminsdk.json
-src/main/resources/application.properties
+
 
 ### 새로 추가할 민감한 파일들 ###
 # 환경 변수 파일들
